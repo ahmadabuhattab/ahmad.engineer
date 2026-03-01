@@ -19,7 +19,7 @@
     <meta name="rating" content="general">
     <meta name="distribution" content="global">
     
-    <!-- Canonical URL - CHANGE THIS TO YOUR ACTUAL DOMAIN -->
+    <!-- Canonical URL -->
     <link rel="canonical" href="https://ahmad.engineer/">
     
     <!-- Open Graph / Facebook -->
@@ -41,7 +41,7 @@
     <meta name="twitter:description" content="Engineering Physics student at McMaster. CEO of City Centre Firm. Founding team at Vosyn ($250M). I build systems that scale.">
     <meta name="twitter:image" content="https://ahmad.engineer/og-image.jpg">
     <meta name="twitter:image:alt" content="Ahmad Abu-Hattab - Engineer & Founder">
-    <meta name="twitter:creator" content="@yourtwitterhandle">
+    <meta name="twitter:creator" content="@ahmadabuhattab">
     
     <!-- LinkedIn specific -->
     <meta property="og:see_also" content="https://www.linkedin.com/in/aabuhattab/">
@@ -60,7 +60,7 @@
     <meta name="apple-mobile-web-app-title" content="Ahmad Abu-Hattab">
     <meta name="application-name" content="Ahmad Abu-Hattab">
     
-    <!-- Favicon - CREATE THESE FILES -->
+    <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
@@ -84,7 +84,7 @@
         "givenName": "Ahmad",
         "familyName": "Abu-Hattab",
         "url": "https://ahmad.engineer",
-        "image": "https://ahmad.engineer/ahmad-abuhattab.jpg",
+        "image": "https://ahmad.engineer/og-image.jpg",
         "description": "Engineering Physics student at McMaster University, CEO of City Centre Firm Corp, and founding team member at Vosyn. Specializing in nuclear engineering, AI, and scalable systems.",
         "email": "a.abuhattab5@gmail.com",
         "telephone": "+1-647-885-0349",
@@ -123,7 +123,7 @@
         ],
         "sameAs": [
             "https://www.linkedin.com/in/aabuhattab/",
-            "https://github.com/yourgithub"
+            "https://github.com/ahmadabuhattab"
         ],
         "nationality": {
             "@type": "Country",
@@ -150,11 +150,6 @@
         "author": {
             "@type": "Person",
             "name": "Ahmad Abu-Hattab"
-        },
-        "potentialAction": {
-            "@type": "SearchAction",
-            "target": "https://ahmad.engineer/?s={search_term_string}",
-            "query-input": "required name=search_term_string"
         }
     }
     </script>
@@ -646,6 +641,19 @@
             .cursor {
                 display: none;
             }
+        }
+
+        /* Screen-reader only text */
+        .visually-hidden {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
         }
 
         /* Print styles for accessibility */
