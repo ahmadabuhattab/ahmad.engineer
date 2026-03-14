@@ -1,39 +1,70 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
         http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
-    
+
     <!-- Homepage -->
     <url>
         <loc>https://ahmad.engineer/</loc>
-        <lastmod>2026-01-18</lastmod>
+        <lastmod>2026-03-14</lastmod>
         <changefreq>monthly</changefreq>
         <priority>1.0</priority>
+        <image:image>
+            <image:loc>https://ahmad.engineer/images/ahmad-abuhattab-photo.jpg</image:loc>
+            <image:title>Ahmad Abu-Hattab — Engineering Physics Student at McMaster University</image:title>
+            <image:caption>Ahmad Abu-Hattab reading at a restaurant in Toronto, Ontario. Engineering Physics student at McMaster University, CEO of City Centre Firm, and startup founder.</image:caption>
+        </image:image>
+        <image:image>
+            <image:loc>https://ahmad.engineer/images/ahmad-abuhattab-portrait.jpg</image:loc>
+            <image:title>Ahmad Abu-Hattab Portrait — Startup Founder and Engineer</image:title>
+            <image:caption>Ahmad Abu-Hattab portrait. Startup founder and engineer based in Toronto, Canada. CEO of City Centre Firm and founding team member at Vosyn.</image:caption>
+        </image:image>
+        <image:image>
+            <image:loc>https://ahmad.engineer/images/ahmad-abuhattab-basketball.jpg</image:loc>
+            <image:title>Ahmad Abu-Hattab Playing Basketball in Toronto</image:title>
+            <image:caption>Ahmad Abu-Hattab playing basketball in Toronto. McMaster Engineering Physics student and entrepreneur.</image:caption>
+        </image:image>
+        <image:image>
+            <image:loc>https://ahmad.engineer/images/ahmad-abuhattab-headshot.jpg</image:loc>
+            <image:title>Ahmad Abu-Hattab Professional Headshot</image:title>
+            <image:caption>Ahmad Abu-Hattab professional headshot. CEO of City Centre Firm, Engineering Physics student at McMaster University, and STELCO co-op student.</image:caption>
+        </image:image>
+        <image:image>
+            <image:loc>https://ahmad.engineer/images/ahmad-abuhattab-nightlife.jpg</image:loc>
+            <image:title>Ahmad Abu-Hattab in Toronto</image:title>
+            <image:caption>Ahmad Abu-Hattab in Toronto nightlife. Engineer, entrepreneur, and McMaster University student.</image:caption>
+        </image:image>
+        <image:image>
+            <image:loc>https://ahmad.engineer/images/ahmad-abuhattab-toronto-evening.jpg</image:loc>
+            <image:title>Ahmad Abu-Hattab Toronto Evening</image:title>
+            <image:caption>Ahmad Abu-Hattab on a Toronto evening. McMaster University Engineering Physics student and STELCO co-op student in Operating Technology and Innovation.</image:caption>
+        </image:image>
     </url>
-    
+
     <!-- About Section -->
     <url>
         <loc>https://ahmad.engineer/#about</loc>
-        <lastmod>2026-01-18</lastmod>
+        <lastmod>2026-03-14</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.8</priority>
     </url>
-    
+
     <!-- Work Section -->
     <url>
         <loc>https://ahmad.engineer/#work</loc>
-        <lastmod>2026-01-18</lastmod>
+        <lastmod>2026-03-14</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.8</priority>
     </url>
-    
+
     <!-- Contact Section -->
     <url>
         <loc>https://ahmad.engineer/#contact</loc>
-        <lastmod>2026-01-18</lastmod>
+        <lastmod>2026-03-14</lastmod>
         <changefreq>yearly</changefreq>
         <priority>0.7</priority>
     </url>
-    
+
 </urlset>
