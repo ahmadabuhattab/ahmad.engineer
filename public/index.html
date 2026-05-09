@@ -85,6 +85,7 @@
         "familyName": "Abu-Hattab",
         "url": "https://ahmad.engineer",
         "image": [
+            "https://ahmad.engineer/images/ahmad-abuhattab-suit.jpg",
             "https://ahmad.engineer/images/ahmad-abuhattab-photo.jpg",
             "https://ahmad.engineer/images/ahmad-abuhattab-portrait.jpg",
             "https://ahmad.engineer/images/ahmad-abuhattab-basketball.jpg",
@@ -191,6 +192,36 @@
         "@graph": [
             {
                 "@type": "ImageObject",
+                "@id": "https://ahmad.engineer/images/ahmad-abuhattab-suit.jpg",
+                "contentUrl": "https://ahmad.engineer/images/ahmad-abuhattab-suit.jpg",
+                "url": "https://ahmad.engineer/images/ahmad-abuhattab-suit.jpg",
+                "name": "Ahmad Abu-Hattab — Professional Headshot",
+                "caption": "Ahmad Abu-Hattab professional headshot in navy suit. Engineering Physics student at McMaster University, CEO of City Centre Firm Corp, and startup founder based in Toronto, Canada.",
+                "description": "Professional headshot of Ahmad Abu-Hattab in a navy suit. Engineer, founder, and CEO of City Centre Firm Corp. Engineering Physics student at McMaster University.",
+                "width": 1620,
+                "height": 2032,
+                "encodingFormat": "image/jpeg",
+                "representativeOfPage": true,
+                "creator": { "@type": "Person", "name": "Ahmad Abu-Hattab" },
+                "creditText": "Ahmad Abu-Hattab",
+                "copyrightNotice": "© Ahmad Abu-Hattab",
+                "license": "https://ahmad.engineer/",
+                "acquireLicensePage": "https://ahmad.engineer/#contact",
+                "contentLocation": {
+                    "@type": "Place",
+                    "name": "Toronto, Ontario, Canada",
+                    "address": {
+                        "@type": "PostalAddress",
+                        "addressLocality": "Toronto",
+                        "addressRegion": "Ontario",
+                        "addressCountry": "CA"
+                    }
+                },
+                "about": { "@id": "https://ahmad.engineer/#person" },
+                "isPartOf": "https://ahmad.engineer/"
+            },
+            {
+                "@type": "ImageObject",
                 "@id": "https://ahmad.engineer/images/ahmad-abuhattab-photo.jpg",
                 "contentUrl": "https://ahmad.engineer/images/ahmad-abuhattab-photo.jpg",
                 "url": "https://ahmad.engineer/images/ahmad-abuhattab-photo.jpg",
@@ -200,7 +231,6 @@
                 "width": 900,
                 "height": 1200,
                 "encodingFormat": "image/jpeg",
-                "representativeOfPage": true,
                 "creator": { "@type": "Person", "name": "Ahmad Abu-Hattab" },
                 "creditText": "Ahmad Abu-Hattab",
                 "copyrightNotice": "© Ahmad Abu-Hattab",
@@ -268,9 +298,9 @@
                 "@id": "https://ahmad.engineer/images/ahmad-abuhattab-headshot.jpg",
                 "contentUrl": "https://ahmad.engineer/images/ahmad-abuhattab-headshot.jpg",
                 "url": "https://ahmad.engineer/images/ahmad-abuhattab-headshot.jpg",
-                "name": "Ahmad Abu-Hattab — Professional Headshot",
-                "caption": "Ahmad Abu-Hattab professional headshot. CEO of City Centre Firm Corp and Engineering Physics student at McMaster University.",
-                "description": "Professional headshot of Ahmad Abu-Hattab, CEO of City Centre Firm and Engineering Physics student.",
+                "name": "Ahmad Abu-Hattab — Candid",
+                "caption": "Ahmad Abu-Hattab candid portrait. CEO of City Centre Firm Corp and Engineering Physics student at McMaster University.",
+                "description": "Candid portrait of Ahmad Abu-Hattab, CEO of City Centre Firm and Engineering Physics student.",
                 "width": 553,
                 "height": 1200,
                 "encodingFormat": "image/jpeg",
@@ -621,8 +651,12 @@
 
         .photo-grid .photo-featured {
             grid-column: 1 / 3;
-            grid-row: 1 / 3;
+            grid-row: 1 / 4;
             aspect-ratio: auto;
+        }
+
+        .photo-grid .photo-featured img {
+            object-position: center top;
         }
 
         @media (max-width: 768px) {
@@ -1516,17 +1550,32 @@
             </h2>
             <div class="photo-grid">
                 <figure class="photo-item photo-featured" itemscope itemtype="https://schema.org/ImageObject">
+                    <img src="/images/ahmad-abuhattab-suit.jpg"
+                         alt="Ahmad Abu-Hattab — professional headshot in navy suit. Engineer, founder, and CEO of City Centre Firm Corp, based in Toronto, Canada"
+                         title="Ahmad Abu-Hattab — Professional Headshot"
+                         width="1620" height="2032"
+                         loading="eager" fetchpriority="high"
+                         itemprop="contentUrl">
+                    <meta itemprop="name" content="Ahmad Abu-Hattab — Professional Headshot">
+                    <meta itemprop="caption" content="Ahmad Abu-Hattab professional headshot in navy suit. Engineering Physics student at McMaster University, CEO of City Centre Firm Corp, and startup founder based in Toronto, Canada.">
+                    <figcaption class="photo-caption">
+                        <span class="caption-place" aria-hidden="true">Founder</span>
+                        <span class="caption-meta" aria-hidden="true">No. 01</span>
+                        <span class="visually-hidden">Ahmad Abu-Hattab professional headshot, navy suit. Engineer, founder, and CEO based in Toronto, Canada.</span>
+                    </figcaption>
+                </figure>
+                <figure class="photo-item" itemscope itemtype="https://schema.org/ImageObject">
                     <img src="/images/ahmad-abuhattab-photo.jpg"
                          alt="Ahmad Abu-Hattab — Engineering Physics student at McMaster University, reading at a restaurant in Toronto, Ontario"
                          title="Ahmad Abu-Hattab in Toronto"
                          width="900" height="1200"
-                         loading="eager" fetchpriority="high"
+                         loading="lazy" decoding="async"
                          itemprop="contentUrl">
                     <meta itemprop="name" content="Ahmad Abu-Hattab in Toronto">
                     <meta itemprop="caption" content="Ahmad Abu-Hattab — Engineering Physics student at McMaster University and CEO of City Centre Firm, photographed in Toronto, Ontario.">
                     <figcaption class="photo-caption">
                         <span class="caption-place" aria-hidden="true">Toronto</span>
-                        <span class="caption-meta" aria-hidden="true">No. 01</span>
+                        <span class="caption-meta" aria-hidden="true">No. 02</span>
                         <span class="visually-hidden">Ahmad Abu-Hattab in Toronto, Ontario.</span>
                     </figcaption>
                 </figure>
@@ -1541,7 +1590,7 @@
                     <meta itemprop="caption" content="Ahmad Abu-Hattab portrait. Engineer and startup founder based in Toronto, Canada.">
                     <figcaption class="photo-caption">
                         <span class="caption-place" aria-hidden="true">Portrait</span>
-                        <span class="caption-meta" aria-hidden="true">No. 02</span>
+                        <span class="caption-meta" aria-hidden="true">No. 03</span>
                         <span class="visually-hidden">Ahmad Abu-Hattab portrait, Toronto.</span>
                     </figcaption>
                 </figure>
@@ -1556,23 +1605,23 @@
                     <meta itemprop="caption" content="Ahmad Abu-Hattab playing basketball in Toronto. McMaster Engineering Physics student.">
                     <figcaption class="photo-caption">
                         <span class="caption-place" aria-hidden="true">Off the court</span>
-                        <span class="caption-meta" aria-hidden="true">No. 03</span>
+                        <span class="caption-meta" aria-hidden="true">No. 04</span>
                         <span class="visually-hidden">Ahmad Abu-Hattab playing basketball in Toronto.</span>
                     </figcaption>
                 </figure>
                 <figure class="photo-item" itemscope itemtype="https://schema.org/ImageObject">
                     <img src="/images/ahmad-abuhattab-headshot.jpg"
-                         alt="Ahmad Abu-Hattab professional headshot — CEO of City Centre Firm and Engineering Physics student"
-                         title="Ahmad Abu-Hattab — Headshot"
+                         alt="Ahmad Abu-Hattab — candid headshot. CEO of City Centre Firm and Engineering Physics student at McMaster University"
+                         title="Ahmad Abu-Hattab — Candid"
                          width="553" height="1200"
                          loading="lazy" decoding="async"
                          itemprop="contentUrl">
-                    <meta itemprop="name" content="Ahmad Abu-Hattab — Headshot">
-                    <meta itemprop="caption" content="Ahmad Abu-Hattab professional headshot. CEO of City Centre Firm Corp and Engineering Physics student at McMaster University.">
+                    <meta itemprop="name" content="Ahmad Abu-Hattab — Candid">
+                    <meta itemprop="caption" content="Ahmad Abu-Hattab candid portrait. CEO of City Centre Firm Corp and Engineering Physics student at McMaster University.">
                     <figcaption class="photo-caption">
                         <span class="caption-place" aria-hidden="true">For the record</span>
-                        <span class="caption-meta" aria-hidden="true">No. 04</span>
-                        <span class="visually-hidden">Ahmad Abu-Hattab professional headshot.</span>
+                        <span class="caption-meta" aria-hidden="true">No. 05</span>
+                        <span class="visually-hidden">Ahmad Abu-Hattab candid headshot.</span>
                     </figcaption>
                 </figure>
                 <figure class="photo-item" itemscope itemtype="https://schema.org/ImageObject">
@@ -1586,7 +1635,7 @@
                     <meta itemprop="caption" content="Ahmad Abu-Hattab in Toronto nightlife. Engineer, entrepreneur, and McMaster University student.">
                     <figcaption class="photo-caption">
                         <span class="caption-place" aria-hidden="true">After hours</span>
-                        <span class="caption-meta" aria-hidden="true">No. 05</span>
+                        <span class="caption-meta" aria-hidden="true">No. 06</span>
                         <span class="visually-hidden">Ahmad Abu-Hattab in Toronto.</span>
                     </figcaption>
                 </figure>
@@ -1601,7 +1650,7 @@
                     <meta itemprop="caption" content="Ahmad Abu-Hattab on a Toronto evening. McMaster University Engineering Physics student and STELCO co-op student.">
                     <figcaption class="photo-caption">
                         <span class="caption-place" aria-hidden="true">Toronto, after dark</span>
-                        <span class="caption-meta" aria-hidden="true">No. 06</span>
+                        <span class="caption-meta" aria-hidden="true">No. 07</span>
                         <span class="visually-hidden">Ahmad Abu-Hattab on a Toronto evening.</span>
                     </figcaption>
                 </figure>

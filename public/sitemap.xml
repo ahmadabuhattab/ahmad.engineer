@@ -12,6 +12,13 @@
         <changefreq>monthly</changefreq>
         <priority>1.0</priority>
         <image:image>
+            <image:loc>https://ahmad.engineer/images/ahmad-abuhattab-suit.jpg</image:loc>
+            <image:title>Ahmad Abu-Hattab — Professional Headshot, Founder &amp; Engineer</image:title>
+            <image:caption>Ahmad Abu-Hattab professional headshot in navy suit. Engineering Physics student at McMaster University, CEO of City Centre Firm Corp, and startup founder based in Toronto, Canada.</image:caption>
+            <image:geo_location>Toronto, Ontario, Canada</image:geo_location>
+            <image:license>https://ahmad.engineer/</image:license>
+        </image:image>
+        <image:image>
             <image:loc>https://ahmad.engineer/images/ahmad-abuhattab-photo.jpg</image:loc>
             <image:title>Ahmad Abu-Hattab — Engineering Physics Student at McMaster University</image:title>
             <image:caption>Ahmad Abu-Hattab reading at a restaurant in Toronto, Ontario. Engineering Physics student at McMaster University, CEO of City Centre Firm, and startup founder.</image:caption>
@@ -34,8 +41,8 @@
         </image:image>
         <image:image>
             <image:loc>https://ahmad.engineer/images/ahmad-abuhattab-headshot.jpg</image:loc>
-            <image:title>Ahmad Abu-Hattab Professional Headshot</image:title>
-            <image:caption>Ahmad Abu-Hattab professional headshot. CEO of City Centre Firm, Engineering Physics student at McMaster University, and STELCO co-op student.</image:caption>
+            <image:title>Ahmad Abu-Hattab Candid Portrait</image:title>
+            <image:caption>Ahmad Abu-Hattab candid portrait. CEO of City Centre Firm, Engineering Physics student at McMaster University, and STELCO co-op student.</image:caption>
             <image:geo_location>Toronto, Ontario, Canada</image:geo_location>
             <image:license>https://ahmad.engineer/</image:license>
         </image:image>
