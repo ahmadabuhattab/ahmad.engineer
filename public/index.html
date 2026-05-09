@@ -1273,90 +1273,261 @@
             100% { opacity: 0.6; transform: translateY(0); }
         }
 
+        /* ============================================================ */
+        /* POKÉMON CARD MEGA — physics tilt, holographic, flip, particles */
+        /* ============================================================ */
+
         .pokemon-card-wrapper {
-            perspective: 800px;
-            width: 340px;
-            height: 475px;
-        }
-
-        .pokemon-card {
             position: relative;
-            width: 100%;
-            height: 100%;
-            border-radius: 16px;
-            background: linear-gradient(145deg, #1a1a2e 0%, #0d0d1a 50%, #1a1a2e 100%);
-            border: 2px solid rgba(180, 180, 200, 0.15);
-            padding: 20px;
-            overflow: hidden;
+            perspective: 1400px;
+            width: 340px;
+            height: 500px;
             transform-style: preserve-3d;
-            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease;
-            cursor: default;
-            box-shadow:
-                0 0 20px rgba(100, 140, 200, 0.08),
-                0 20px 60px rgba(0, 0, 0, 0.5);
+            cursor: pointer;
         }
 
-        .pokemon-card:hover {
-            transform: rotateY(5deg) rotateX(-3deg) scale(1.03);
-            box-shadow:
-                0 0 40px rgba(100, 140, 200, 0.15),
-                0 30px 80px rgba(0, 0, 0, 0.6);
-        }
-
-        /* Holographic shimmer overlay */
-        .pokemon-card::before {
-            content: '';
+        /* Dynamic aura — blob of color that follows the cursor */
+        .pokemon-aura {
             position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            border-radius: 14px;
-            background: linear-gradient(
-                125deg,
-                transparent 0%,
-                rgba(120, 180, 255, 0.04) 20%,
-                rgba(200, 150, 255, 0.06) 40%,
-                rgba(100, 220, 200, 0.04) 60%,
-                transparent 80%
-            );
-            background-size: 200% 200%;
-            animation: holoShimmer 6s ease-in-out infinite;
+            top: 50%;
+            left: 50%;
+            width: 600px;
+            height: 600px;
+            transform: translate(-50%, -50%);
             pointer-events: none;
-            z-index: 10;
+            opacity: 0;
+            transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: -1;
+            background: radial-gradient(
+                circle at calc(var(--mx, 50) * 1%) calc(var(--my, 50) * 1%),
+                rgba(180, 140, 255, 0.32) 0%,
+                rgba(120, 180, 255, 0.20) 18%,
+                rgba(80, 220, 200, 0.12) 36%,
+                transparent 60%
+            );
+            filter: blur(28px);
+            will-change: opacity;
         }
 
-        /* Sparkle/grain overlay */
-        .pokemon-card::after {
-            content: '';
+        .pokemon-card-wrapper:hover .pokemon-aura,
+        .pokemon-card-wrapper.is-hover .pokemon-aura {
+            opacity: 1;
+        }
+
+        /* Floating sparkles around the card */
+        .pokemon-particles {
             position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
+            inset: -20px;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .pokemon-particle {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            border-radius: 50%;
+            background: #fff;
+            box-shadow: 0 0 8px rgba(180, 200, 255, 0.85), 0 0 14px rgba(180, 200, 255, 0.4);
+            opacity: 0;
+            animation-name: particleDrift;
+            animation-iteration-count: infinite;
+            animation-timing-function: ease-in-out;
+            will-change: transform, opacity;
+        }
+
+        .pokemon-card-wrapper:hover .pokemon-particle,
+        .pokemon-card-wrapper.is-hover .pokemon-particle {
+            animation-play-state: running;
+        }
+
+        .pokemon-particle:nth-child(1) { top: 8%;  left: 12%; animation-duration: 7s;  animation-delay: 0.0s; }
+        .pokemon-particle:nth-child(2) { top: 18%; left: 88%; animation-duration: 9s;  animation-delay: 1.2s; width: 2px; height: 2px; }
+        .pokemon-particle:nth-child(3) { top: 42%; left: 4%;  animation-duration: 6s;  animation-delay: 2.5s; }
+        .pokemon-particle:nth-child(4) { top: 55%; left: 96%; animation-duration: 8s;  animation-delay: 0.8s; width: 4px; height: 4px; }
+        .pokemon-particle:nth-child(5) { top: 78%; left: 18%; animation-duration: 10s; animation-delay: 3.1s; }
+        .pokemon-particle:nth-child(6) { top: 90%; left: 78%; animation-duration: 7.5s;animation-delay: 1.7s; width: 2px; height: 2px; }
+        .pokemon-particle:nth-child(7) { top: 28%; left: 50%; animation-duration: 11s; animation-delay: 4.2s; }
+        .pokemon-particle:nth-child(8) { top: 68%; left: 60%; animation-duration: 8.5s;animation-delay: 0.5s; width: 4px; height: 4px; }
+        .pokemon-particle:nth-child(9) { top: 4%;  left: 65%; animation-duration: 9.5s;animation-delay: 2.0s; }
+        .pokemon-particle:nth-child(10){ top: 50%; left: 30%; animation-duration: 6.5s;animation-delay: 3.6s; }
+
+        @keyframes particleDrift {
+            0%, 100% {
+                transform: translate(0, 0) scale(0.6);
+                opacity: 0;
+            }
+            20% { opacity: 1; }
+            50% {
+                transform: translate(20px, -28px) scale(1.2);
+                opacity: 0.9;
+            }
+            80% { opacity: 0.6; }
+        }
+
+        /* Tilt layer — driven by JS via CSS custom properties */
+        .pokemon-card-tilt {
+            position: absolute;
+            inset: 0;
+            transform-style: preserve-3d;
+            transform:
+                translate3d(0, calc(var(--lift, 0) * -1px), calc(var(--lift, 0) * 1px))
+                rotateX(calc(var(--rx, 0) * 1deg))
+                rotateY(calc(var(--ry, 0) * 1deg))
+                rotateZ(calc(var(--rz, 0) * 1deg))
+                scale(var(--scale, 1));
+            will-change: transform;
+        }
+
+        /* Flipper — rotates 180deg around Y on click */
+        .pokemon-card-flipper {
+            position: absolute;
+            inset: 0;
+            transform-style: preserve-3d;
+            transform: rotateY(calc(var(--flip, 0) * 1deg));
+            transition: transform 0.9s cubic-bezier(0.65, 0, 0.35, 1);
+        }
+
+        .pokemon-card-wrapper.is-flipped .pokemon-card-flipper {
+            --flip: 180;
+        }
+
+        /* Card faces — front + back share absolute fill, hidden when away */
+        .pokemon-card-face {
+            position: absolute;
+            inset: 0;
+            border-radius: 16px;
+            padding: 20px;
+            background: linear-gradient(145deg, #1a1a2e 0%, #0d0d1a 50%, #1a1a2e 100%);
+            border: 2px solid rgba(180, 180, 200, 0.18);
+            overflow: hidden;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            box-shadow:
+                0 0 calc(20px + var(--lift, 0) * 2px) rgba(120, 160, 230, calc(0.08 + var(--lift, 0) * 0.008)),
+                0 calc(20px + var(--lift, 0) * 1.4px) calc(60px + var(--lift, 0) * 2px) rgba(0, 0, 0, 0.55);
+        }
+
+        .pokemon-card-back {
+            transform: rotateY(180deg);
+            background: linear-gradient(150deg, #14142a 0%, #08081a 50%, #14142a 100%);
+        }
+
+        /* Holographic specular highlight — follows cursor */
+        .pokemon-holo-specular {
+            position: absolute;
+            inset: 0;
             border-radius: 14px;
-            background: repeating-linear-gradient(
-                0deg,
-                rgba(255, 255, 255, 0.01) 0px,
-                transparent 1px,
-                transparent 2px
-            );
+            pointer-events: none;
+            z-index: 12;
+            mix-blend-mode: color-dodge;
+            opacity: var(--holo, 0);
+            transition: opacity 0.4s ease;
+            background:
+                radial-gradient(
+                    circle at calc(var(--mx, 50) * 1%) calc(var(--my, 50) * 1%),
+                    rgba(255, 255, 255, 0.55) 0%,
+                    rgba(255, 240, 200, 0.30) 8%,
+                    rgba(200, 180, 255, 0.15) 18%,
+                    transparent 35%
+                );
+        }
+
+        /* Holographic rainbow foil — color shift moves with cursor */
+        .pokemon-holo-rainbow {
+            position: absolute;
+            inset: 0;
+            border-radius: 14px;
             pointer-events: none;
             z-index: 11;
+            mix-blend-mode: color-dodge;
+            opacity: calc(var(--holo, 0) * 0.7);
+            transition: opacity 0.4s ease;
+            background:
+                repeating-linear-gradient(
+                    115deg,
+                    rgba(255, 0, 128, 0.18) 0%,
+                    rgba(255, 200, 0, 0.18) 8%,
+                    rgba(0, 255, 170, 0.18) 16%,
+                    rgba(0, 170, 255, 0.18) 24%,
+                    rgba(170, 0, 255, 0.18) 32%,
+                    rgba(255, 0, 128, 0.18) 40%
+                );
+            background-size: 220% 220%;
+            background-position:
+                calc((100 - var(--mx, 50)) * 1%)
+                calc((100 - var(--my, 50)) * 1%);
         }
 
-        @keyframes holoShimmer {
-            0%   { background-position: 200% 0%; }
-            50%  { background-position: 0% 200%; }
-            100% { background-position: 200% 0%; }
+        /* Foil scratch / metallic grain texture */
+        .pokemon-foil-grain {
+            position: absolute;
+            inset: 0;
+            border-radius: 14px;
+            pointer-events: none;
+            z-index: 10;
+            opacity: 0.5;
+            background:
+                repeating-linear-gradient(
+                    45deg,
+                    rgba(255, 255, 255, 0.012) 0px,
+                    rgba(255, 255, 255, 0.012) 1px,
+                    transparent 1px,
+                    transparent 3px
+                ),
+                repeating-linear-gradient(
+                    -45deg,
+                    rgba(255, 255, 255, 0.008) 0px,
+                    rgba(255, 255, 255, 0.008) 1px,
+                    transparent 1px,
+                    transparent 3px
+                );
         }
 
-        /* Card header */
+        /* Light leak — diagonal bright streak that follows cursor speed */
+        .pokemon-light-leak {
+            position: absolute;
+            inset: 0;
+            border-radius: 14px;
+            pointer-events: none;
+            z-index: 13;
+            opacity: calc(var(--cursor-speed, 0) * 0.4);
+            mix-blend-mode: screen;
+            background: linear-gradient(
+                calc(var(--leak-angle, 105) * 1deg),
+                transparent 40%,
+                rgba(255, 240, 200, 0.5) 49%,
+                rgba(255, 255, 255, 0.7) 50%,
+                rgba(200, 220, 255, 0.5) 51%,
+                transparent 60%
+            );
+            transition: opacity 0.3s ease;
+        }
+
+        /* Edge highlight — top edge catches light */
+        .pokemon-edge-light {
+            position: absolute;
+            inset: 0;
+            border-radius: 16px;
+            pointer-events: none;
+            z-index: 14;
+            opacity: calc(var(--holo, 0) * 0.8);
+            background: linear-gradient(
+                calc((var(--mx, 50) - 50) * 1.8deg + 90deg),
+                transparent 0%,
+                rgba(255, 255, 255, 0.10) 48%,
+                rgba(255, 255, 255, 0.20) 50%,
+                rgba(255, 255, 255, 0.10) 52%,
+                transparent 100%
+            );
+        }
+
+        /* Header */
         .pkmn-header {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-bottom: 14px;
+            margin-bottom: 12px;
             position: relative;
             z-index: 5;
         }
@@ -1398,12 +1569,12 @@
             margin-bottom: 2px;
         }
 
-        /* Card art area */
+        /* Card art */
         .pkmn-art {
             width: 100%;
-            height: 150px;
+            height: 140px;
             border-radius: 8px;
-            margin-bottom: 14px;
+            margin-bottom: 12px;
             position: relative;
             z-index: 5;
             overflow: hidden;
@@ -1414,7 +1585,6 @@
             border: 1px solid rgba(100, 150, 220, 0.1);
         }
 
-        /* Steel beam pattern inside card art */
         .pkmn-art-inner {
             position: relative;
             width: 100%;
@@ -1432,7 +1602,7 @@
 
         .pkmn-art-text {
             font-family: 'Instrument Serif', serif;
-            font-size: 2rem;
+            font-size: 1.85rem;
             font-style: italic;
             color: rgba(255, 255, 255, 0.9);
             text-align: center;
@@ -1453,12 +1623,12 @@
             margin-top: 6px;
         }
 
-        /* Type badge */
+        /* Type badge row */
         .pkmn-type-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 14px;
+            margin-bottom: 10px;
             position: relative;
             z-index: 5;
         }
@@ -1494,7 +1664,7 @@
         }
 
         .pkmn-attack {
-            padding: 10px 0;
+            padding: 8px 0;
             border-top: 1px solid rgba(255,255,255,0.06);
             display: grid;
             grid-template-columns: 24px 1fr auto;
@@ -1509,34 +1679,76 @@
             background: linear-gradient(135deg, rgba(180,180,200,0.2), rgba(140,140,160,0.1));
             border: 1px solid rgba(180,180,200,0.2);
             margin-top: 2px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .pkmn-attack-energy::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.5), transparent 60%);
         }
 
         .pkmn-attack-name {
             font-family: 'Inter', sans-serif;
-            font-size: 0.8rem;
+            font-size: 0.78rem;
             font-weight: 500;
             color: rgba(255,255,255,0.85);
-            margin-bottom: 3px;
+            margin-bottom: 2px;
         }
 
         .pkmn-attack-desc {
-            font-size: 0.6rem;
+            font-size: 0.58rem;
             color: rgba(255,255,255,0.35);
             line-height: 1.5;
         }
 
         .pkmn-attack-dmg {
             font-family: 'Inter', sans-serif;
-            font-size: 1.1rem;
+            font-size: 1.05rem;
             font-weight: 500;
             color: rgba(255,255,255,0.7);
             padding-top: 1px;
         }
 
-        /* Card footer info */
+        /* Weakness / Resistance / Retreat row */
+        .pkmn-wrr {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 6px;
+            padding: 8px 0;
+            margin-top: 6px;
+            border-top: 1px solid rgba(255,255,255,0.06);
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            position: relative;
+            z-index: 5;
+        }
+
+        .pkmn-wrr-cell {
+            text-align: center;
+        }
+
+        .pkmn-wrr-label {
+            font-size: 0.45rem;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.35);
+            margin-bottom: 3px;
+        }
+
+        .pkmn-wrr-value {
+            font-family: 'Instrument Serif', serif;
+            font-style: italic;
+            font-size: 0.85rem;
+            color: rgba(255,255,255,0.75);
+        }
+
+        /* Card footer */
         .pkmn-footer {
             position: absolute;
-            bottom: 16px;
+            bottom: 14px;
             left: 20px;
             right: 20px;
             display: flex;
@@ -1549,7 +1761,7 @@
             font-size: 0.5rem;
             color: rgba(255,255,255,0.2);
             letter-spacing: 0.05em;
-            line-height: 1.6;
+            line-height: 1.5;
         }
 
         .pkmn-rarity {
@@ -1557,14 +1769,173 @@
             color: rgba(255, 215, 0, 0.5);
         }
 
-        /* Responsive */
+        /* Flip hint button */
+        .pkmn-flip-hint {
+            position: absolute;
+            bottom: 14px;
+            right: 14px;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.18);
+            background: rgba(255,255,255,0.04);
+            color: rgba(255,255,255,0.6);
+            font-size: 0.85rem;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 20;
+            transition: background 0.3s ease, color 0.3s ease, transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            font-family: 'Inter', sans-serif;
+            line-height: 1;
+        }
+
+        .pokemon-card-wrapper:hover .pkmn-flip-hint,
+        .pokemon-card-wrapper.is-hover .pkmn-flip-hint {
+            display: flex;
+        }
+
+        .pkmn-flip-hint:hover {
+            background: rgba(255,255,255,0.12);
+            color: #fff;
+            transform: rotate(180deg);
+        }
+
+        /* Card BACK content */
+        .pkmn-back-content {
+            position: relative;
+            z-index: 5;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            color: rgba(255,255,255,0.85);
+        }
+
+        .pkmn-back-crest {
+            text-align: center;
+            font-family: 'Instrument Serif', serif;
+            font-style: italic;
+            font-size: 1.6rem;
+            letter-spacing: 0.05em;
+            margin-bottom: 4px;
+            color: #fff;
+            text-shadow: 0 0 20px rgba(120, 170, 230, 0.5);
+        }
+
+        .pkmn-back-tagline {
+            text-align: center;
+            font-size: 0.5rem;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.35);
+            margin-bottom: 18px;
+        }
+
+        .pkmn-back-section {
+            margin-bottom: 14px;
+        }
+
+        .pkmn-back-section-label {
+            font-size: 0.48rem;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.4);
+            margin-bottom: 6px;
+        }
+
+        .pkmn-back-section-text {
+            font-size: 0.65rem;
+            line-height: 1.6;
+            color: rgba(255,255,255,0.65);
+        }
+
+        .pkmn-back-evolution {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 4px;
+            font-family: 'Instrument Serif', serif;
+            font-size: 0.78rem;
+            color: rgba(255,255,255,0.7);
+        }
+
+        .pkmn-back-evolution span:nth-child(2) {
+            opacity: 0.4;
+            font-size: 0.6rem;
+        }
+
+        .pkmn-back-evolution em {
+            font-style: italic;
+            color: #fff;
+        }
+
+        .pkmn-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .pkmn-stat {
+            display: grid;
+            grid-template-columns: 64px 1fr 24px;
+            gap: 8px;
+            align-items: center;
+            font-size: 0.55rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.55);
+        }
+
+        .pkmn-stat-bar {
+            height: 4px;
+            border-radius: 2px;
+            background: rgba(255,255,255,0.08);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .pkmn-stat-fill {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg,
+                rgba(120, 170, 230, 0.6),
+                rgba(180, 140, 255, 0.7));
+            transform-origin: left center;
+            transform: scaleX(0);
+            transition: transform 1.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .pokemon-card-wrapper.is-flipped .pkmn-stat-fill {
+            transform: scaleX(var(--stat, 0));
+        }
+
+        .pkmn-stat-value {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.6rem;
+            font-weight: 500;
+            color: rgba(255,255,255,0.7);
+            text-align: right;
+        }
+
+        .pkmn-back-footer {
+            margin-top: auto;
+            text-align: center;
+            font-size: 0.5rem;
+            letter-spacing: 0.12em;
+            color: rgba(255,255,255,0.3);
+            font-family: 'Instrument Serif', serif;
+            font-style: italic;
+        }
+
+        /* Mobile responsive */
         @media (max-width: 768px) {
             .pokemon-card-wrapper {
                 width: 300px;
-                height: 420px;
+                height: 460px;
             }
 
-            .pokemon-card {
+            .pokemon-card-face {
                 padding: 16px;
             }
 
@@ -1573,7 +1944,7 @@
             }
 
             .pkmn-art-text {
-                font-size: 1.6rem;
+                font-size: 1.5rem;
             }
 
             .pkmn-name {
@@ -1582,6 +1953,11 @@
 
             .pkmn-hp-value {
                 font-size: 1.2rem;
+            }
+
+            .pokemon-aura {
+                width: 460px;
+                height: 460px;
             }
         }
 
@@ -1881,65 +2257,159 @@
                         <p class="pokemon-encounter-text">
                             A wild <span class="wild-name">STELCO</span> appeared!
                         </p>
-                        <div class="pokemon-card-wrapper">
-                            <div class="pokemon-card" id="pokemonCard">
-                                <div class="pkmn-header">
-                                    <div>
-                                        <div class="pkmn-stage">Stage 1 — Co-op Evolution</div>
-                                        <div class="pkmn-name">STELCO</div>
-                                    </div>
-                                    <div class="pkmn-hp">
-                                        <span class="pkmn-hp-value">250</span>
-                                        <span class="pkmn-hp-label">HP</span>
-                                    </div>
-                                </div>
+                        <div class="pokemon-card-wrapper" id="pokemonCardWrapper" role="button" tabindex="0" aria-label="STELCO Pokemon card. Click to flip.">
+                            <div class="pokemon-aura" aria-hidden="true"></div>
+                            <div class="pokemon-particles" aria-hidden="true">
+                                <span class="pokemon-particle"></span>
+                                <span class="pokemon-particle"></span>
+                                <span class="pokemon-particle"></span>
+                                <span class="pokemon-particle"></span>
+                                <span class="pokemon-particle"></span>
+                                <span class="pokemon-particle"></span>
+                                <span class="pokemon-particle"></span>
+                                <span class="pokemon-particle"></span>
+                                <span class="pokemon-particle"></span>
+                                <span class="pokemon-particle"></span>
+                            </div>
+                            <div class="pokemon-card-tilt" id="pokemonCardTilt">
+                                <div class="pokemon-card-flipper" id="pokemonCardFlipper">
+                                    <div class="pokemon-card-face pokemon-card-front" id="pokemonCard">
+                                        <div class="pokemon-foil-grain" aria-hidden="true"></div>
+                                        <div class="pokemon-holo-rainbow" aria-hidden="true"></div>
+                                        <div class="pokemon-holo-specular" aria-hidden="true"></div>
+                                        <div class="pokemon-light-leak" aria-hidden="true"></div>
+                                        <div class="pokemon-edge-light" aria-hidden="true"></div>
 
-                                <div class="pkmn-art">
-                                    <div class="pkmn-art-inner">
-                                        <span class="steel-icon" style="top:15%;left:10%;">&#9878;</span>
-                                        <span class="steel-icon" style="bottom:10%;right:12%;">&#9878;</span>
-                                        <div class="pkmn-art-text">
-                                            Lake Erie Works
-                                            <span class="pkmn-art-subtitle">Nanticoke, Ontario</span>
+                                        <div class="pkmn-header">
+                                            <div>
+                                                <div class="pkmn-stage">Stage 1 — Co-op Evolution</div>
+                                                <div class="pkmn-name">STELCO</div>
+                                            </div>
+                                            <div class="pkmn-hp">
+                                                <span class="pkmn-hp-value">250</span>
+                                                <span class="pkmn-hp-label">HP</span>
+                                            </div>
+                                        </div>
+
+                                        <div class="pkmn-art">
+                                            <div class="pkmn-art-inner">
+                                                <span class="steel-icon" style="top:15%;left:10%;">&#9878;</span>
+                                                <span class="steel-icon" style="bottom:10%;right:12%;">&#9878;</span>
+                                                <div class="pkmn-art-text">
+                                                    Lake Erie Works
+                                                    <span class="pkmn-art-subtitle">Nanticoke, Ontario</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="pkmn-type-row">
+                                            <div class="pkmn-type-badge">
+                                                <span class="pkmn-type-icon">&#9879;</span>
+                                                Steel Type
+                                            </div>
+                                            <span class="pkmn-location">May 2026 — 16 months</span>
+                                        </div>
+
+                                        <div class="pkmn-attacks">
+                                            <div class="pkmn-attack">
+                                                <div class="pkmn-attack-energy"></div>
+                                                <div>
+                                                    <div class="pkmn-attack-name">Data Analytics</div>
+                                                    <div class="pkmn-attack-desc">Analyze operational data to optimize steel manufacturing processes.</div>
+                                                </div>
+                                                <div class="pkmn-attack-dmg">80</div>
+                                            </div>
+                                            <div class="pkmn-attack">
+                                                <div class="pkmn-attack-energy"></div>
+                                                <div>
+                                                    <div class="pkmn-attack-name">Process Forge</div>
+                                                    <div class="pkmn-attack-desc">Deploy industrial technology &amp; innovation at one of Canada's leading steel manufacturers.</div>
+                                                </div>
+                                                <div class="pkmn-attack-dmg">120+</div>
+                                            </div>
+                                        </div>
+
+                                        <div class="pkmn-wrr">
+                                            <div class="pkmn-wrr-cell">
+                                                <div class="pkmn-wrr-label">Weakness</div>
+                                                <div class="pkmn-wrr-value">Bureaucracy</div>
+                                            </div>
+                                            <div class="pkmn-wrr-cell">
+                                                <div class="pkmn-wrr-label">Resistance</div>
+                                                <div class="pkmn-wrr-value">Idle Time</div>
+                                            </div>
+                                            <div class="pkmn-wrr-cell">
+                                                <div class="pkmn-wrr-label">Retreat</div>
+                                                <div class="pkmn-wrr-value">16 mo.</div>
+                                            </div>
+                                        </div>
+
+                                        <div class="pkmn-footer">
+                                            <div class="pkmn-footer-info">
+                                                Operating Technology &amp; Innovation<br>
+                                                The Steel Company of Canada
+                                            </div>
+                                            <span class="pkmn-rarity" title="Ultra Rare">&#9733;</span>
                                         </div>
                                     </div>
-                                </div>
 
-                                <div class="pkmn-type-row">
-                                    <div class="pkmn-type-badge">
-                                        <span class="pkmn-type-icon">&#9879;</span>
-                                        Steel Type
-                                    </div>
-                                    <span class="pkmn-location">May 2026 — 16 months</span>
-                                </div>
+                                    <!-- BACK of card -->
+                                    <div class="pokemon-card-face pokemon-card-back" aria-hidden="true">
+                                        <div class="pokemon-foil-grain"></div>
+                                        <div class="pokemon-holo-rainbow"></div>
+                                        <div class="pokemon-holo-specular"></div>
+                                        <div class="pokemon-edge-light"></div>
 
-                                <div class="pkmn-attacks">
-                                    <div class="pkmn-attack">
-                                        <div class="pkmn-attack-energy"></div>
-                                        <div>
-                                            <div class="pkmn-attack-name">Data Analytics</div>
-                                            <div class="pkmn-attack-desc">Analyze operational data to optimize steel manufacturing processes.</div>
+                                        <div class="pkmn-back-content">
+                                            <div class="pkmn-back-crest">A.A&middot;H</div>
+                                            <div class="pkmn-back-tagline">Trainer's Card &middot; Established 2024</div>
+
+                                            <div class="pkmn-back-section">
+                                                <div class="pkmn-back-section-label">Trainer</div>
+                                                <div class="pkmn-back-section-text">
+                                                    Ahmad Abu-Hattab &mdash; Engineering Physics, McMaster University. CEO &amp; Founder of City Centre Firm Corp. Founding team at Vosyn.
+                                                </div>
+                                            </div>
+
+                                            <div class="pkmn-back-section">
+                                                <div class="pkmn-back-section-label">Evolution Chain</div>
+                                                <div class="pkmn-back-evolution">
+                                                    <em>McMaster Eng. Phys.</em><span>&rarr;</span><em>STELCO Co-op</em><span>&rarr;</span><em>?</em>
+                                                </div>
+                                            </div>
+
+                                            <div class="pkmn-back-section">
+                                                <div class="pkmn-back-section-label">Stats</div>
+                                                <div class="pkmn-stats">
+                                                    <div class="pkmn-stat" style="--stat: 0.85;">
+                                                        <span>Data</span>
+                                                        <div class="pkmn-stat-bar"><div class="pkmn-stat-fill"></div></div>
+                                                        <span class="pkmn-stat-value">85</span>
+                                                    </div>
+                                                    <div class="pkmn-stat" style="--stat: 0.92;">
+                                                        <span>Process</span>
+                                                        <div class="pkmn-stat-bar"><div class="pkmn-stat-fill"></div></div>
+                                                        <span class="pkmn-stat-value">92</span>
+                                                    </div>
+                                                    <div class="pkmn-stat" style="--stat: 0.88;">
+                                                        <span>Innov.</span>
+                                                        <div class="pkmn-stat-bar"><div class="pkmn-stat-fill"></div></div>
+                                                        <span class="pkmn-stat-value">88</span>
+                                                    </div>
+                                                    <div class="pkmn-stat" style="--stat: 0.74;">
+                                                        <span>Steel</span>
+                                                        <div class="pkmn-stat-bar"><div class="pkmn-stat-fill"></div></div>
+                                                        <span class="pkmn-stat-value">74</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="pkmn-back-footer">May 2026 &mdash; September 2027 &middot; Lake Erie Works</div>
                                         </div>
-                                        <div class="pkmn-attack-dmg">80</div>
                                     </div>
-                                    <div class="pkmn-attack">
-                                        <div class="pkmn-attack-energy"></div>
-                                        <div>
-                                            <div class="pkmn-attack-name">Process Forge</div>
-                                            <div class="pkmn-attack-desc">Deploy industrial technology & innovation at one of Canada's leading steel manufacturers.</div>
-                                        </div>
-                                        <div class="pkmn-attack-dmg">120+</div>
-                                    </div>
-                                </div>
-
-                                <div class="pkmn-footer">
-                                    <div class="pkmn-footer-info">
-                                        Operating Technology & Innovation<br>
-                                        The Steel Company of Canada
-                                    </div>
-                                    <span class="pkmn-rarity" title="Ultra Rare">&#9733;</span>
                                 </div>
                             </div>
+                            <button type="button" class="pkmn-flip-hint" id="pokemonFlipBtn" aria-label="Flip card to back" title="Flip">&#x21BB;</button>
                         </div>
                     </div>
 
@@ -2083,38 +2553,232 @@
             });
         });
 
-        // Pokémon card 3D tilt on mousemove
-        const pokemonCard = document.getElementById('pokemonCard');
-        if (pokemonCard && !prefersReducedMotion) {
-            const wrapper = pokemonCard.parentElement;
+        // ============================================================
+        // POKÉMON CARD MEGA: physics tilt, holographic, flip, gyroscope
+        // ============================================================
+        const pokemonWrapper = document.getElementById('pokemonCardWrapper');
+        const pokemonTilt = document.getElementById('pokemonCardTilt');
+        const pokemonFlipBtn = document.getElementById('pokemonFlipBtn');
 
-            wrapper.addEventListener('mousemove', (e) => {
-                const rect = wrapper.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
-                const centerX = rect.width / 2;
-                const centerY = rect.height / 2;
-                const rotateX = ((y - centerY) / centerY) * -8;
-                const rotateY = ((x - centerX) / centerX) * 8;
+        if (pokemonWrapper && pokemonTilt && prefersReducedMotion) {
+            // Reduced motion: keep click-to-flip but skip all dynamic effects
+            const flip = () => pokemonWrapper.classList.toggle('is-flipped');
+            pokemonWrapper.addEventListener('click', flip);
+            pokemonWrapper.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flip(); }
+            });
+            if (pokemonFlipBtn) pokemonFlipBtn.addEventListener('click', (e) => {
+                e.stopPropagation(); flip();
+            });
+        } else if (pokemonWrapper && pokemonTilt) {
+            // Spring-physics state. All values are scalars; transforms read them
+            // via CSS custom properties so the GPU does the heavy lifting.
+            const state = {
+                rx: 0, ry: 0, rz: 0, lift: 0, scale: 1,
+                tRx: 0, tRy: 0, tRz: 0, tLift: 0, tScale: 1,
+                mx: 50, my: 50,
+                tMx: 50, tMy: 50,
+                holo: 0, tHolo: 0,
+                speed: 0,
+                lastX: 0, lastY: 0, lastT: 0,
+                hovering: false,
+                flipped: false,
+                idleT: 0,
+                running: false,
+                rafId: null,
+            };
 
-                pokemonCard.style.transform =
-                    `rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.03)`;
+            const setVar = (k, v) => pokemonTilt.style.setProperty(k, v);
+            const setWrapperVar = (k, v) => pokemonWrapper.style.setProperty(k, v);
 
-                // Dynamic shimmer position based on cursor
-                const shimmerX = (x / rect.width) * 100;
-                const shimmerY = (y / rect.height) * 100;
-                pokemonCard.style.setProperty(
-                    'background',
-                    `linear-gradient(145deg, #1a1a2e 0%, #0d0d1a 50%, #1a1a2e 100%)`
-                );
-                pokemonCard.querySelector(':scope').style.setProperty(
-                    '--shimmer-x', shimmerX + '%'
-                );
+            // Initial CSS var defaults
+            setVar('--rx', 0); setVar('--ry', 0); setVar('--rz', 0);
+            setVar('--lift', 0); setVar('--scale', 1);
+            setWrapperVar('--mx', 50); setWrapperVar('--my', 50);
+
+            // Pass holo / cursor vars to every layer that needs them
+            const setLayerVar = (k, v) => {
+                document.querySelectorAll(
+                    '#pokemonCard, .pokemon-card-back, .pokemon-aura'
+                ).forEach(el => el.style.setProperty(k, v));
+            };
+
+            const lerp = (a, b, t) => a + (b - a) * t;
+
+            const tick = () => {
+                // Spring toward targets (heavier = lower lerp factor)
+                state.rx    = lerp(state.rx,    state.tRx,    0.14);
+                state.ry    = lerp(state.ry,    state.tRy,    0.14);
+                state.rz    = lerp(state.rz,    state.tRz,    0.10);
+                state.lift  = lerp(state.lift,  state.tLift,  0.18);
+                state.scale = lerp(state.scale, state.tScale, 0.18);
+                state.mx    = lerp(state.mx,    state.tMx,    0.22);
+                state.my    = lerp(state.my,    state.tMy,    0.22);
+                state.holo  = lerp(state.holo,  state.tHolo,  0.10);
+                state.speed = lerp(state.speed, 0,            0.06);
+
+                // Add subtle idle floating when not interacting
+                if (!state.hovering && !state.flipped) {
+                    state.idleT += 0.012;
+                    state.rx += Math.sin(state.idleT)        * 0.6;
+                    state.ry += Math.sin(state.idleT * 0.73) * 0.9;
+                }
+
+                setVar('--rx', state.rx.toFixed(3));
+                setVar('--ry', state.ry.toFixed(3));
+                setVar('--rz', state.rz.toFixed(3));
+                setVar('--lift', state.lift.toFixed(2));
+                setVar('--scale', state.scale.toFixed(4));
+                setLayerVar('--mx', state.mx.toFixed(2));
+                setLayerVar('--my', state.my.toFixed(2));
+                setLayerVar('--holo', state.holo.toFixed(3));
+                setLayerVar('--cursor-speed', state.speed.toFixed(3));
+                setLayerVar('--leak-angle', (105 + state.ry * 2).toFixed(1));
+
+                // Continue if anything's still settling, or if hovering / idle drift
+                const movement =
+                    Math.abs(state.tRx - state.rx) +
+                    Math.abs(state.tRy - state.ry) +
+                    Math.abs(state.tHolo - state.holo) +
+                    Math.abs(state.tLift - state.lift);
+
+                if (movement > 0.01 || state.hovering || !state.flipped) {
+                    state.rafId = requestAnimationFrame(tick);
+                } else {
+                    state.rafId = null;
+                    state.running = false;
+                }
+            };
+
+            const startTick = () => {
+                if (!state.rafId) {
+                    state.running = true;
+                    state.rafId = requestAnimationFrame(tick);
+                }
+            };
+
+            // ---- Mouse / pointer handling ----
+            const onMove = (clientX, clientY) => {
+                const rect = pokemonWrapper.getBoundingClientRect();
+                const px = (clientX - rect.left) / rect.width;
+                const py = (clientY - rect.top) / rect.height;
+                // Constrain so cursor barely outside still tilts a bit
+                const cx = Math.max(-0.2, Math.min(1.2, px));
+                const cy = Math.max(-0.2, Math.min(1.2, py));
+
+                state.tMx = cx * 100;
+                state.tMy = cy * 100;
+                state.tRy = (cx - 0.5) * 28;   // up to ±14°
+                state.tRx = -(cy - 0.5) * 22;  // up to ±11°
+                state.tRz = (cx - 0.5) * 5;    // subtle roll
+
+                // Cursor-speed for light-leak intensity
+                const now = performance.now();
+                if (state.lastT) {
+                    const dt = Math.max(now - state.lastT, 1);
+                    const dx = clientX - state.lastX;
+                    const dy = clientY - state.lastY;
+                    const v = Math.min(Math.hypot(dx, dy) / dt * 6, 1.2);
+                    state.speed = Math.max(state.speed, v);
+                }
+                state.lastT = now; state.lastX = clientX; state.lastY = clientY;
+
+                startTick();
+            };
+
+            const onEnter = () => {
+                state.hovering = true;
+                pokemonWrapper.classList.add('is-hover');
+                state.tLift = 18;
+                state.tScale = 1.04;
+                state.tHolo = 1;
+                startTick();
+            };
+
+            const onLeave = () => {
+                state.hovering = false;
+                pokemonWrapper.classList.remove('is-hover');
+                state.tRx = 0; state.tRy = 0; state.tRz = 0;
+                state.tLift = 0; state.tScale = 1; state.tHolo = 0;
+                state.tMx = 50; state.tMy = 50;
+                state.lastT = 0;
+                startTick();
+            };
+
+            pokemonWrapper.addEventListener('pointerenter', onEnter);
+            pokemonWrapper.addEventListener('pointerleave', onLeave);
+            pokemonWrapper.addEventListener('pointermove', (e) => onMove(e.clientX, e.clientY));
+
+            // ---- Click / keyboard / button: flip ----
+            const flip = (e) => {
+                if (e) e.stopPropagation();
+                state.flipped = !state.flipped;
+                pokemonWrapper.classList.toggle('is-flipped', state.flipped);
+                // Tiny "kick" on flip
+                state.tScale = state.flipped ? 1.06 : 1.04;
+                setTimeout(() => {
+                    state.tScale = state.hovering ? 1.04 : 1;
+                    startTick();
+                }, 320);
+                startTick();
+            };
+
+            pokemonWrapper.addEventListener('click', (e) => {
+                // Don't flip when clicking the explicit flip button (its own handler)
+                if (e.target.closest('.pkmn-flip-hint')) return;
+                flip(e);
+            });
+            if (pokemonFlipBtn) pokemonFlipBtn.addEventListener('click', flip);
+
+            pokemonWrapper.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    flip();
+                }
             });
 
-            wrapper.addEventListener('mouseleave', () => {
-                pokemonCard.style.transform = 'rotateX(0) rotateY(0) scale(1)';
-            });
+            // ---- Mobile: gyroscope tilt via deviceorientation ----
+            // Browser-permission-gated on iOS, opt-in there. On Android it works
+            // automatically. We only register if we don't already have a mouse.
+            const hasFinePointer = window.matchMedia('(pointer: fine)').matches;
+            if (!hasFinePointer && 'DeviceOrientationEvent' in window) {
+                let baseBeta = null, baseGamma = null;
+                const onOrient = (e) => {
+                    if (e.beta == null || e.gamma == null) return;
+                    if (baseBeta == null) { baseBeta = e.beta; baseGamma = e.gamma; }
+                    const dBeta = Math.max(-30, Math.min(30, e.beta  - baseBeta));
+                    const dGamma = Math.max(-30, Math.min(30, e.gamma - baseGamma));
+                    state.tRx = -dBeta * 0.4;
+                    state.tRy = dGamma * 0.5;
+                    state.tMx = 50 + dGamma * 1.5;
+                    state.tMy = 50 + dBeta * 1.5;
+                    state.tHolo = 0.85;
+                    startTick();
+                };
+                // iOS 13+: needs permission; only ask after user gesture (the first
+                // tap on the card itself)
+                if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+                    pokemonWrapper.addEventListener('click', () => {
+                        DeviceOrientationEvent.requestPermission()
+                            .then(p => { if (p === 'granted') window.addEventListener('deviceorientation', onOrient); })
+                            .catch(() => {});
+                    }, { once: true });
+                } else {
+                    window.addEventListener('deviceorientation', onOrient);
+                }
+            }
+
+            // Pause RAF when card is offscreen — preserve battery
+            const visibilityObs = new IntersectionObserver(([entry]) => {
+                if (entry.isIntersecting) {
+                    startTick();
+                } else {
+                    if (state.rafId) cancelAnimationFrame(state.rafId);
+                    state.rafId = null;
+                    state.running = false;
+                }
+            }, { threshold: 0 });
+            visibilityObs.observe(pokemonWrapper);
         }
 
         // Project list cursor-follow preview
