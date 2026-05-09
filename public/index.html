@@ -328,6 +328,44 @@
             opacity: 0.5;
         }
 
+        /* Status pill */
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.4rem 0.85rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 100px;
+            font-size: 0.62rem;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.65);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+        }
+
+        .status-pill .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #fff;
+            box-shadow: 0 0 0 0 rgba(255,255,255,0.5);
+            animation: statusPulse 2.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            flex-shrink: 0;
+        }
+
+        @keyframes statusPulse {
+            0%, 100% {
+                box-shadow: 0 0 0 0 rgba(255,255,255,0.55);
+                opacity: 1;
+            }
+            50% {
+                box-shadow: 0 0 0 6px rgba(255,255,255,0);
+                opacity: 0.7;
+            }
+        }
+
         .hero-scroll {
             font-size: 0.7rem;
             letter-spacing: 0.15em;
@@ -375,6 +413,46 @@
         .photo-grid .photo-item:hover img {
             filter: grayscale(0%);
             transform: scale(1.03);
+        }
+
+        /* Hover caption */
+        .photo-caption {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            padding: 1.25rem 1.25rem 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            gap: 1rem;
+            font-size: 0.6rem;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.85);
+            background: linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0) 100%);
+            opacity: 0;
+            transform: translateY(8px);
+            transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            pointer-events: none;
+        }
+
+        .photo-grid .photo-item:hover .photo-caption {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .photo-caption .caption-place {
+            font-style: italic;
+            font-family: 'Instrument Serif', serif;
+            font-size: 0.95rem;
+            letter-spacing: 0;
+            text-transform: none;
+            color: #fff;
+        }
+
+        .photo-caption .caption-meta {
+            opacity: 0.6;
         }
 
         .photo-grid .photo-featured {
@@ -538,6 +616,69 @@
             opacity: 0.3;
             letter-spacing: 0.15em;
             text-transform: uppercase;
+        }
+
+        /* Cursor-follow project preview */
+        .project-preview {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 240px;
+            padding: 1.4rem 1.5rem 1.25rem;
+            background: rgba(10, 10, 10, 0.72);
+            border: 1px solid rgba(255,255,255,0.12);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border-radius: 4px;
+            pointer-events: none;
+            opacity: 0;
+            transform: translate(-50%, -50%) scale(0.96);
+            transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 90;
+            will-change: transform, opacity;
+        }
+
+        .project-preview.visible {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .project-preview-num {
+            font-family: 'Instrument Serif', serif;
+            font-style: italic;
+            font-size: 0.85rem;
+            opacity: 0.4;
+            margin-bottom: 0.85rem;
+        }
+
+        .project-preview-title {
+            font-family: 'Instrument Serif', serif;
+            font-size: 1.6rem;
+            line-height: 1.05;
+            letter-spacing: -0.02em;
+            margin-bottom: 1.1rem;
+        }
+
+        .project-preview-title em {
+            font-style: italic;
+        }
+
+        .project-preview-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 0.85rem;
+            border-top: 1px solid rgba(255,255,255,0.08);
+            font-size: 0.55rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            opacity: 0.55;
+        }
+
+        @media (max-width: 1024px) {
+            .project-preview {
+                display: none;
+            }
         }
 
         /* Contact */
@@ -725,6 +866,54 @@
             flex-direction: column;
             align-items: center;
             gap: 2rem;
+            isolation: isolate;
+        }
+
+        /* Encounter aura — blooms in when card scrolls into view */
+        .pokemon-encounter::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 720px;
+            height: 720px;
+            transform: translate(-50%, -50%) scale(0.6);
+            background: radial-gradient(
+                circle at center,
+                rgba(120, 170, 230, 0.18) 0%,
+                rgba(100, 140, 200, 0.10) 22%,
+                rgba(60, 90, 150, 0.05) 45%,
+                transparent 65%
+            );
+            filter: blur(20px);
+            opacity: 0;
+            pointer-events: none;
+            z-index: -1;
+            transition: opacity 1.4s cubic-bezier(0.16, 1, 0.3, 1), transform 1.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .pokemon-encounter.visible::before {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+            animation: encounterPulse 6s ease-in-out 1.4s infinite;
+        }
+
+        @keyframes encounterPulse {
+            0%, 100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1.08);
+                opacity: 0.75;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .pokemon-encounter::before {
+                width: 460px;
+                height: 460px;
+            }
         }
 
         .pokemon-encounter-text {
@@ -1072,9 +1261,47 @@
                 background: #fff;
                 color: #000;
             }
-            
+
             nav, .cursor, .hero-scroll {
                 display: none;
+            }
+        }
+
+        /* Reduced-motion: respect users who don't want animation */
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.001s !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.001s !important;
+                scroll-behavior: auto !important;
+            }
+
+            .hero-title .line span {
+                transform: translateY(0);
+            }
+
+            .hero-info,
+            .pokemon-encounter-text {
+                opacity: 1;
+            }
+
+            .fade-up {
+                opacity: 1;
+                transform: none;
+            }
+
+            .cursor {
+                display: none;
+            }
+
+            .status-pill .status-dot {
+                box-shadow: none;
+            }
+
+            .pokemon-encounter::before {
+                animation: none;
             }
         }
     </style>
@@ -1103,9 +1330,15 @@
                 <span class="line"><span class="italic">Abu-Hattab</span></span>
             </h1>
             <div class="hero-info">
-                <p class="hero-desc">
-                    Engineering Physics at McMaster. I build systems that scale. From heavy iron to $250M startups.
-                </p>
+                <div>
+                    <div class="status-pill" role="status" aria-label="Currently at Lake Erie Works">
+                        <span class="status-dot" aria-hidden="true"></span>
+                        Currently at Lake Erie Works
+                    </div>
+                    <p class="hero-desc">
+                        Engineering Physics at McMaster. I build systems that scale. From heavy iron to $250M startups.
+                    </p>
+                </div>
                 <div class="hero-scroll" aria-hidden="true">
                     <span></span>
                     Scroll
@@ -1117,21 +1350,45 @@
             <div class="photo-grid">
                 <div class="photo-item photo-featured">
                     <img src="/images/ahmad-abuhattab-photo.jpg" alt="Ahmad Abu-Hattab — Engineering Physics student at McMaster University, reading at a restaurant in Toronto, Ontario" width="900" height="1200" loading="eager">
+                    <div class="photo-caption" aria-hidden="true">
+                        <span class="caption-place">Toronto</span>
+                        <span class="caption-meta">No. 01</span>
+                    </div>
                 </div>
                 <div class="photo-item">
                     <img src="/images/ahmad-abuhattab-portrait.jpg" alt="Ahmad Abu-Hattab portrait — startup founder and engineer based in Toronto, Canada" width="553" height="1200" loading="lazy">
+                    <div class="photo-caption" aria-hidden="true">
+                        <span class="caption-place">Portrait</span>
+                        <span class="caption-meta">No. 02</span>
+                    </div>
                 </div>
                 <div class="photo-item">
                     <img src="/images/ahmad-abuhattab-basketball.jpg" alt="Ahmad Abu-Hattab playing basketball in Toronto — McMaster Engineering Physics student" width="554" height="1200" loading="lazy">
+                    <div class="photo-caption" aria-hidden="true">
+                        <span class="caption-place">Off the court</span>
+                        <span class="caption-meta">No. 03</span>
+                    </div>
                 </div>
                 <div class="photo-item">
                     <img src="/images/ahmad-abuhattab-headshot.jpg" alt="Ahmad Abu-Hattab professional headshot — CEO of City Centre Firm and Engineering Physics student" width="553" height="1200" loading="lazy">
+                    <div class="photo-caption" aria-hidden="true">
+                        <span class="caption-place">For the record</span>
+                        <span class="caption-meta">No. 04</span>
+                    </div>
                 </div>
                 <div class="photo-item">
                     <img src="/images/ahmad-abuhattab-nightlife.jpg" alt="Ahmad Abu-Hattab in Toronto nightlife — engineer and entrepreneur" width="553" height="1200" loading="lazy">
+                    <div class="photo-caption" aria-hidden="true">
+                        <span class="caption-place">After hours</span>
+                        <span class="caption-meta">No. 05</span>
+                    </div>
                 </div>
                 <div class="photo-item">
                     <img src="/images/ahmad-abuhattab-toronto-evening.jpg" alt="Ahmad Abu-Hattab on a Toronto evening — McMaster University Engineering Physics, STELCO co-op student" width="553" height="1200" loading="lazy">
+                    <div class="photo-caption" aria-hidden="true">
+                        <span class="caption-place">Toronto, after dark</span>
+                        <span class="caption-meta">No. 06</span>
+                    </div>
                 </div>
             </div>
         </section>
@@ -1254,27 +1511,49 @@
             <div class="section-grid">
                 <h2 id="work-heading" class="section-label">Selected Work</h2>
                 <div class="section-content">
-                    <div class="project-list" role="list" aria-label="Featured projects">
-                        <article class="project-item fade-up" role="listitem">
+                    <div class="project-list" role="list" aria-label="Featured projects" id="projectList">
+                        <article class="project-item fade-up" role="listitem"
+                                 data-preview-title="Voice <em>synthesis</em>"
+                                 data-preview-meta="Founding team"
+                                 data-preview-year="2023">
                             <span class="project-num" aria-hidden="true">01</span>
                             <h3 class="project-name">Vosyn</h3>
                             <span class="project-arrow" aria-hidden="true">→</span>
                         </article>
-                        <article class="project-item fade-up" role="listitem">
+                        <article class="project-item fade-up" role="listitem"
+                                 data-preview-title="<em>Nuclear</em> systems"
+                                 data-preview-meta="Research"
+                                 data-preview-year="2024 — 25">
                             <span class="project-num" aria-hidden="true">02</span>
                             <h3 class="project-name">Reactor Systems</h3>
                             <span class="project-arrow" aria-hidden="true">→</span>
                         </article>
-                        <article class="project-item fade-up" role="listitem">
+                        <article class="project-item fade-up" role="listitem"
+                                 data-preview-title="<em>Infrastructure</em> for ops"
+                                 data-preview-meta="CEO &middot; Founder"
+                                 data-preview-year="2025 — Now">
                             <span class="project-num" aria-hidden="true">03</span>
                             <h3 class="project-name">City Centre</h3>
                             <span class="project-arrow" aria-hidden="true">→</span>
                         </article>
-                        <article class="project-item fade-up" role="listitem">
+                        <article class="project-item fade-up" role="listitem"
+                                 data-preview-title="<em>Frontier</em> models"
+                                 data-preview-meta="Outlier &middot; AI Eval"
+                                 data-preview-year="2025">
                             <span class="project-num" aria-hidden="true">04</span>
                             <h3 class="project-name">Frontier AI Research</h3>
                             <span class="project-arrow" aria-hidden="true">→</span>
                         </article>
+                    </div>
+
+                    <!-- Cursor-follow preview card -->
+                    <div class="project-preview" id="projectPreview" aria-hidden="true">
+                        <div class="project-preview-num">N&deg; <span data-preview-slot="num">01</span></div>
+                        <div class="project-preview-title" data-preview-slot="title">Voice <em>synthesis</em></div>
+                        <div class="project-preview-meta">
+                            <span data-preview-slot="meta">Founding team</span>
+                            <span data-preview-slot="year">2023</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1299,19 +1578,23 @@
     </footer>
 
     <script>
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
         // Cursor
         const cursor = document.getElementById('cursor');
-        
-        document.addEventListener('mousemove', (e) => {
-            cursor.style.left = e.clientX + 'px';
-            cursor.style.top = e.clientY + 'px';
-        });
 
-        const hoverElements = document.querySelectorAll('a, .project-item, .exp-item, .pokemon-card');
-        hoverElements.forEach(el => {
-            el.addEventListener('mouseenter', () => cursor.classList.add('expand'));
-            el.addEventListener('mouseleave', () => cursor.classList.remove('expand'));
-        });
+        if (!prefersReducedMotion) {
+            document.addEventListener('mousemove', (e) => {
+                cursor.style.left = e.clientX + 'px';
+                cursor.style.top = e.clientY + 'px';
+            });
+
+            const hoverElements = document.querySelectorAll('a, .exp-item, .pokemon-card');
+            hoverElements.forEach(el => {
+                el.addEventListener('mouseenter', () => cursor.classList.add('expand'));
+                el.addEventListener('mouseleave', () => cursor.classList.remove('expand'));
+            });
+        }
 
         // Scroll reveal
         const observer = new IntersectionObserver((entries) => {
@@ -1335,7 +1618,7 @@
 
         // Pokémon card 3D tilt on mousemove
         const pokemonCard = document.getElementById('pokemonCard');
-        if (pokemonCard) {
+        if (pokemonCard && !prefersReducedMotion) {
             const wrapper = pokemonCard.parentElement;
 
             wrapper.addEventListener('mousemove', (e) => {
@@ -1364,6 +1647,64 @@
 
             wrapper.addEventListener('mouseleave', () => {
                 pokemonCard.style.transform = 'rotateX(0) rotateY(0) scale(1)';
+            });
+        }
+
+        // Project list cursor-follow preview
+        const projectList = document.getElementById('projectList');
+        const projectPreview = document.getElementById('projectPreview');
+        if (projectList && projectPreview && !prefersReducedMotion && window.matchMedia('(min-width: 1025px)').matches) {
+            const slots = {
+                num: projectPreview.querySelector('[data-preview-slot="num"]'),
+                title: projectPreview.querySelector('[data-preview-slot="title"]'),
+                meta: projectPreview.querySelector('[data-preview-slot="meta"]'),
+                year: projectPreview.querySelector('[data-preview-slot="year"]'),
+            };
+
+            let rafId = null;
+            let targetX = 0, targetY = 0;
+            let currentX = 0, currentY = 0;
+            let visible = false;
+
+            const animate = () => {
+                currentX += (targetX - currentX) * 0.18;
+                currentY += (targetY - currentY) * 0.18;
+                projectPreview.style.transform =
+                    `translate(calc(${currentX}px - 50%), calc(${currentY}px - 50%)) scale(${visible ? 1 : 0.96})`;
+                if (visible || Math.abs(targetX - currentX) > 0.5 || Math.abs(targetY - currentY) > 0.5) {
+                    rafId = requestAnimationFrame(animate);
+                } else {
+                    rafId = null;
+                }
+            };
+
+            const items = projectList.querySelectorAll('.project-item');
+            items.forEach((item, idx) => {
+                item.addEventListener('mouseenter', () => {
+                    slots.num.textContent = String(idx + 1).padStart(2, '0');
+                    slots.title.innerHTML = item.dataset.previewTitle || '';
+                    slots.meta.textContent = item.dataset.previewMeta || '';
+                    slots.year.textContent = item.dataset.previewYear || '';
+                    visible = true;
+                    projectPreview.classList.add('visible');
+                    cursor.classList.add('expand');
+                    if (!rafId) rafId = requestAnimationFrame(animate);
+                });
+                item.addEventListener('mouseleave', () => {
+                    visible = false;
+                    projectPreview.classList.remove('visible');
+                    cursor.classList.remove('expand');
+                });
+            });
+
+            projectList.addEventListener('mousemove', (e) => {
+                targetX = e.clientX;
+                targetY = e.clientY;
+                if (currentX === 0 && currentY === 0) {
+                    currentX = targetX;
+                    currentY = targetY;
+                }
+                if (!rafId && visible) rafId = requestAnimationFrame(animate);
             });
         }
 
