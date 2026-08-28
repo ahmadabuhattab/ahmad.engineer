@@ -21,9 +21,24 @@
     
     <!-- Canonical URL -->
     <link rel="canonical" href="https://ahmad.engineer/">
+
+    <!-- Language alternates (self-referencing; consolidates ranking signals) -->
+    <link rel="alternate" hreflang="en" href="https://ahmad.engineer/">
+    <link rel="alternate" hreflang="x-default" href="https://ahmad.engineer/">
+
+    <!-- Identity consolidation: rel=me ties social profiles to this domain -->
+    <link rel="me" href="https://www.linkedin.com/in/aabuhattab/">
+    <link rel="me" href="https://github.com/ahmadabuhattab">
+    <link rel="me" href="https://www.instagram.com/soky">
+
+    <!-- Sitemap hint for crawlers -->
+    <link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap.xml">
     
     <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="website">
+    <meta property="og:type" content="profile">
+    <meta property="profile:first_name" content="Ahmad">
+    <meta property="profile:last_name" content="Abu-Hattab">
+    <meta property="profile:username" content="ahmadabuhattab">
     <meta property="og:url" content="https://ahmad.engineer/">
     <meta property="og:title" content="Ahmad Abu-Hattab | Engineering Physics & Startup Founder">
     <meta property="og:description" content="Engineering Physics student at McMaster. CEO of City Centre Firm. Founding team at Vosyn ($250M). I build systems that scale.">
@@ -108,114 +123,201 @@
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
     
-    <!-- Structured Data / JSON-LD -->
+    <!-- Structured Data / JSON-LD: consolidated entity graph
+         ProfilePage (Google person-profile rich results) + WebSite + Person
+         + Organization + ProfessionalService + FAQPage, all cross-linked by @id -->
     <script type="application/ld+json">
     {
         "@context": "https://schema.org",
-        "@type": "Person",
-        "@id": "https://ahmad.engineer/#person",
-        "name": "Ahmad Abu-Hattab",
-        "givenName": "Ahmad",
-        "familyName": "Abu-Hattab",
-        "url": "https://ahmad.engineer",
-        "image": [
-            "https://ahmad.engineer/images/ahmad-abuhattab-suit.jpg",
-            "https://ahmad.engineer/images/ahmad-abuhattab-photo.jpg",
-            "https://ahmad.engineer/images/ahmad-abuhattab-portrait.jpg",
-            "https://ahmad.engineer/images/ahmad-abuhattab-basketball.jpg",
-            "https://ahmad.engineer/images/ahmad-abuhattab-headshot.jpg",
-            "https://ahmad.engineer/images/ahmad-abuhattab-nightlife.jpg",
-            "https://ahmad.engineer/images/ahmad-abuhattab-toronto-evening.jpg"
-        ],
-        "description": "Engineering Physics student at McMaster University, CEO of City Centre Firm Corp, and founding team member at Vosyn. Specializing in nuclear engineering, AI, and scalable systems.",
-        "email": "a.abuhattab5@gmail.com",
-        "telephone": "+1-647-885-0349",
-        "jobTitle": ["CEO", "Engineering Physics Student", "Founder", "Co-op Student — Operating Technology & Innovation"],
-        "worksFor": [
+        "@graph": [
             {
-                "@type": "Organization",
-                "name": "City Centre Firm Corp",
-                "url": "https://citycentrefirm.com"
+                "@type": "ProfilePage",
+                "@id": "https://ahmad.engineer/#profilepage",
+                "url": "https://ahmad.engineer/",
+                "name": "Ahmad Abu-Hattab | Engineering Physics Student & Startup Founder | McMaster University",
+                "isPartOf": { "@id": "https://ahmad.engineer/#website" },
+                "about": { "@id": "https://ahmad.engineer/#person" },
+                "mainEntity": { "@id": "https://ahmad.engineer/#person" },
+                "primaryImageOfPage": { "@id": "https://ahmad.engineer/images/ahmad-abuhattab-suit.jpg" },
+                "thumbnailUrl": "https://ahmad.engineer/images/ahmad-abuhattab-suit-600w.jpg",
+                "dateCreated": "2026-05-09",
+                "dateModified": "2026-08-28",
+                "inLanguage": "en-CA",
+                "relatedLink": [
+                    "https://www.linkedin.com/in/aabuhattab/",
+                    "https://github.com/ahmadabuhattab",
+                    "https://citycentrefirm.com"
+                ]
             },
             {
-                "@type": "EducationalOrganization",
-                "name": "McMaster University",
-                "url": "https://www.mcmaster.ca"
+                "@type": "WebSite",
+                "@id": "https://ahmad.engineer/#website",
+                "url": "https://ahmad.engineer/",
+                "name": "Ahmad Abu-Hattab",
+                "alternateName": ["Ahmad Abu Hattab", "Ahmad Abuhattab", "A. Abu-Hattab", "ahmad.engineer"],
+                "description": "Official website of Ahmad Abu-Hattab - Engineering Physics student, startup founder, and engineer.",
+                "publisher": { "@id": "https://ahmad.engineer/#person" },
+                "inLanguage": "en-CA"
+            },
+            {
+                "@type": "Person",
+                "@id": "https://ahmad.engineer/#person",
+                "name": "Ahmad Abu-Hattab",
+                "alternateName": ["Ahmad Abuhattab", "Ahmad Abu Hattab", "A. Abu-Hattab"],
+                "givenName": "Ahmad",
+                "familyName": "Abu-Hattab",
+                "url": "https://ahmad.engineer/",
+                "mainEntityOfPage": { "@id": "https://ahmad.engineer/#profilepage" },
+                "subjectOf": { "@id": "https://ahmad.engineer/#website" },
+                "image": [
+                    "https://ahmad.engineer/images/ahmad-abuhattab-suit.jpg",
+                    "https://ahmad.engineer/images/ahmad-abuhattab-photo.jpg",
+                    "https://ahmad.engineer/images/ahmad-abuhattab-portrait.jpg",
+                    "https://ahmad.engineer/images/ahmad-abuhattab-basketball.jpg",
+                    "https://ahmad.engineer/images/ahmad-abuhattab-headshot.jpg",
+                    "https://ahmad.engineer/images/ahmad-abuhattab-nightlife.jpg",
+                    "https://ahmad.engineer/images/ahmad-abuhattab-toronto-evening.jpg"
+                ],
+                "description": "Engineering Physics student at McMaster University, CEO of City Centre Firm Corp, and founding team member at Vosyn. Specializing in nuclear engineering, AI, and scalable systems.",
+                "email": "a.abuhattab5@gmail.com",
+                "telephone": "+1-647-885-0349",
+                "jobTitle": ["CEO", "Engineering Physics Student", "Founder", "Co-op Student — Operating Technology & Innovation"],
+                "hasOccupation": [
+                    {
+                        "@type": "Occupation",
+                        "name": "Engineer",
+                        "occupationLocation": { "@type": "City", "name": "Toronto" }
+                    },
+                    {
+                        "@type": "Occupation",
+                        "name": "Startup Founder",
+                        "occupationLocation": { "@type": "City", "name": "Toronto" }
+                    }
+                ],
+                "worksFor": [
+                    { "@id": "https://citycentrefirm.com/#organization" },
+                    {
+                        "@type": "EducationalOrganization",
+                        "name": "McMaster University",
+                        "url": "https://www.mcmaster.ca"
+                    }
+                ],
+                "alumniOf": {
+                    "@type": "EducationalOrganization",
+                    "name": "McMaster University",
+                    "url": "https://www.mcmaster.ca"
+                },
+                "knowsAbout": [
+                    "Engineering Physics",
+                    "Nuclear Engineering",
+                    "Reactor Physics",
+                    "Neutron Transport",
+                    "Thermal-Hydraulics",
+                    "Artificial Intelligence",
+                    "Machine Learning",
+                    "Startup Development",
+                    "Python",
+                    "C++",
+                    "MATLAB",
+                    "COMSOL",
+                    "TensorFlow"
+                ],
+                "knowsLanguage": "en",
+                "sameAs": [
+                    "https://www.linkedin.com/in/aabuhattab/",
+                    "https://github.com/ahmadabuhattab",
+                    "https://www.instagram.com/soky"
+                ],
+                "nationality": {
+                    "@type": "Country",
+                    "name": "Canada"
+                },
+                "homeLocation": {
+                    "@type": "Place",
+                    "name": "Toronto, Ontario, Canada"
+                },
+                "address": {
+                    "@type": "PostalAddress",
+                    "addressLocality": "Toronto",
+                    "addressRegion": "Ontario",
+                    "addressCountry": "CA"
+                }
+            },
+            {
+                "@type": "Organization",
+                "@id": "https://citycentrefirm.com/#organization",
+                "name": "City Centre Firm Corp",
+                "url": "https://citycentrefirm.com",
+                "founder": { "@id": "https://ahmad.engineer/#person" }
+            },
+            {
+                "@type": "ProfessionalService",
+                "@id": "https://ahmad.engineer/#service",
+                "name": "Ahmad Abu-Hattab - Engineering & Consulting",
+                "description": "Engineering physics expertise, AI development, and startup consulting services.",
+                "url": "https://ahmad.engineer/",
+                "founder": { "@id": "https://ahmad.engineer/#person" },
+                "priceRange": "$$",
+                "address": {
+                    "@type": "PostalAddress",
+                    "addressLocality": "Toronto",
+                    "addressRegion": "Ontario",
+                    "addressCountry": "CA"
+                },
+                "areaServed": {
+                    "@type": "Country",
+                    "name": "Canada"
+                }
+            },
+            {
+                "@type": "FAQPage",
+                "@id": "https://ahmad.engineer/#faq",
+                "isPartOf": { "@id": "https://ahmad.engineer/#website" },
+                "inLanguage": "en-CA",
+                "mainEntity": [
+                    {
+                        "@type": "Question",
+                        "name": "Who is Ahmad Abu-Hattab?",
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": "Ahmad Abu-Hattab is a Canadian engineer and startup founder based in Toronto, Ontario. He studies Engineering Physics at McMaster University, is the CEO and founder of City Centre Firm Corp, and was a founding team member at Vosyn, a voice-AI startup that reached a $250 million valuation."
+                        }
+                    },
+                    {
+                        "@type": "Question",
+                        "name": "What does Ahmad Abu-Hattab study?",
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": "Ahmad studies Engineering Physics at McMaster University with a focus on nuclear systems — neutron transport, thermal-hydraulics, and reactor kinetics."
+                        }
+                    },
+                    {
+                        "@type": "Question",
+                        "name": "What companies has Ahmad Abu-Hattab worked with?",
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": "Ahmad is currently a co-op student in Operating Technology & Innovation at STELCO's Lake Erie Works. He is the CEO and founder of City Centre Firm Corp, served as an IBM zSystems Ambassador at McMaster University, evaluated frontier AI models at Outlier, and was on the founding team at Vosyn."
+                        }
+                    },
+                    {
+                        "@type": "Question",
+                        "name": "Where is Ahmad Abu-Hattab based?",
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": "Ahmad is based in Toronto, Ontario, Canada, and is currently on co-op at STELCO's Lake Erie Works in Nanticoke, Ontario."
+                        }
+                    },
+                    {
+                        "@type": "Question",
+                        "name": "How can I contact Ahmad Abu-Hattab?",
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": "You can reach Ahmad by email at a.abuhattab5@gmail.com or connect with him on LinkedIn at linkedin.com/in/aabuhattab."
+                        }
+                    }
+                ]
             }
-        ],
-        "alumniOf": {
-            "@type": "EducationalOrganization",
-            "name": "McMaster University",
-            "url": "https://www.mcmaster.ca"
-        },
-        "knowsAbout": [
-            "Engineering Physics",
-            "Nuclear Engineering",
-            "Reactor Physics",
-            "Neutron Transport",
-            "Thermal-Hydraulics",
-            "Artificial Intelligence",
-            "Machine Learning",
-            "Startup Development",
-            "Python",
-            "C++",
-            "MATLAB",
-            "COMSOL",
-            "TensorFlow"
-        ],
-        "sameAs": [
-            "https://www.linkedin.com/in/aabuhattab/",
-            "https://github.com/ahmadabuhattab",
-            "https://www.instagram.com/soky"
-        ],
-        "nationality": {
-            "@type": "Country",
-            "name": "Canada"
-        },
-        "address": {
-            "@type": "PostalAddress",
-            "addressLocality": "Toronto",
-            "addressRegion": "Ontario",
-            "addressCountry": "CA"
-        }
-    }
-    </script>
-    
-    <!-- Website Structured Data -->
-    <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@type": "WebSite",
-        "name": "Ahmad Abu-Hattab",
-        "alternateName": ["Ahmad Abu Hattab", "A. Abu-Hattab"],
-        "url": "https://ahmad.engineer",
-        "description": "Official website of Ahmad Abu-Hattab - Engineering Physics student, startup founder, and engineer.",
-        "author": {
-            "@type": "Person",
-            "name": "Ahmad Abu-Hattab"
-        }
-    }
-    </script>
-    
-    <!-- Professional Service Structured Data -->
-    <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@type": "ProfessionalService",
-        "name": "Ahmad Abu-Hattab - Engineering & Consulting",
-        "description": "Engineering physics expertise, AI development, and startup consulting services.",
-        "url": "https://ahmad.engineer",
-        "priceRange": "$$",
-        "address": {
-            "@type": "PostalAddress",
-            "addressLocality": "Toronto",
-            "addressRegion": "Ontario",
-            "addressCountry": "CA"
-        },
-        "areaServed": {
-            "@type": "Country",
-            "name": "Canada"
-        }
+        ]
     }
     </script>
 
@@ -829,7 +931,8 @@
             height: fit-content;
         }
 
-        .section-content h2 {
+        .section-content h2,
+        .section-content h3 {
             font-family: 'Instrument Serif', serif;
             font-size: clamp(2rem, 5vw, 3.5rem);
             font-weight: 400;
@@ -838,7 +941,8 @@
             margin-bottom: 3rem;
         }
 
-        .section-content h2 em {
+        .section-content h2 em,
+        .section-content h3 em {
             font-style: italic;
         }
 
@@ -1186,6 +1290,82 @@
             clip: rect(0, 0, 0, 0);
             white-space: nowrap;
             border: 0;
+        }
+
+        /* Link to full photo gallery */
+        .photo-more {
+            margin-top: 3rem;
+        }
+
+        .photo-more-link {
+            font-family: 'Instrument Serif', serif;
+            font-style: italic;
+            font-size: 1.15rem;
+            letter-spacing: -0.005em;
+            opacity: 0.55;
+            border-bottom: 1px solid rgba(255,255,255,0.25);
+            padding-bottom: 0.2rem;
+            transition: opacity 0.3s ease, border-color 0.3s ease;
+        }
+
+        .photo-more-link:hover,
+        .photo-more-link:focus {
+            opacity: 1;
+            border-color: rgba(255,255,255,0.7);
+        }
+
+        /* FAQ */
+        .faq-list {
+            margin-top: 4rem;
+        }
+
+        .faq-item {
+            border-top: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .faq-item summary {
+            list-style: none;
+            cursor: pointer;
+            padding: 2.5rem 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 2rem;
+            font-family: 'Instrument Serif', serif;
+            font-size: clamp(1.3rem, 2.5vw, 1.8rem);
+            font-weight: 400;
+            letter-spacing: -0.02em;
+            transition: opacity 0.3s ease, padding-left 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .faq-item summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .faq-item summary:hover {
+            padding-left: 1rem;
+            opacity: 0.7;
+        }
+
+        .faq-item summary::after {
+            content: '+';
+            font-size: 1.5rem;
+            opacity: 0.3;
+            flex-shrink: 0;
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .faq-item[open] summary::after {
+            transform: rotate(45deg);
+        }
+
+        .faq-item .faq-answer {
+            font-size: 1rem;
+            line-height: 2;
+            opacity: 0.5;
+            max-width: 580px;
+            margin: 0;
+            padding: 0 0 2.5rem;
         }
 
         /* === POKÉMON CARD — STELCO === */
@@ -2011,6 +2191,11 @@
             }
         }
     </style>
+    <noscript>
+        <style>
+            .fade-up { opacity: 1; transform: none; }
+        </style>
+    </noscript>
 </head>
 <body>
     <!-- Skip to main content for accessibility -->
@@ -2024,6 +2209,7 @@
             <ul class="nav-links">
                 <li><a href="#about">About</a></li>
                 <li><a href="#work">Work</a></li>
+                <li><a href="/photos">Photos</a></li>
                 <li><a href="#contact">Contact</a></li>
             </ul>
         </nav>
@@ -2234,6 +2420,9 @@
                     </figcaption>
                 </figure>
             </div>
+            <p class="photo-more fade-up">
+                <a href="/photos" class="photo-more-link">View all photographs of Ahmad Abu-Hattab &rarr;</a>
+            </p>
         </section>
 
         <section class="section" id="about" aria-labelledby="about-heading">
@@ -2491,6 +2680,40 @@
                             <span data-preview-slot="meta">Founding team</span>
                             <span data-preview-slot="year">2023</span>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" id="faq" aria-labelledby="faq-heading">
+            <div class="section-grid">
+                <h2 id="faq-heading" class="section-label">FAQ</h2>
+                <div class="section-content">
+                    <h3 class="fade-up">
+                        Frequently asked<br>
+                        about <em>Ahmad Abu-Hattab</em>
+                    </h3>
+                    <div class="faq-list">
+                        <details class="faq-item fade-up">
+                            <summary>Who is Ahmad Abu-Hattab?</summary>
+                            <p class="faq-answer">Ahmad Abu-Hattab is a Canadian engineer and startup founder based in Toronto, Ontario. He studies Engineering Physics at McMaster University, is the CEO and founder of City Centre Firm Corp, and was a founding team member at Vosyn, a voice-AI startup that reached a $250 million valuation.</p>
+                        </details>
+                        <details class="faq-item fade-up">
+                            <summary>What does Ahmad Abu-Hattab study?</summary>
+                            <p class="faq-answer">Ahmad studies Engineering Physics at McMaster University with a focus on nuclear systems &mdash; neutron transport, thermal-hydraulics, and reactor kinetics.</p>
+                        </details>
+                        <details class="faq-item fade-up">
+                            <summary>What companies has Ahmad Abu-Hattab worked with?</summary>
+                            <p class="faq-answer">Ahmad is currently a co-op student in Operating Technology &amp; Innovation at STELCO's Lake Erie Works. He is the CEO and founder of City Centre Firm Corp, served as an IBM zSystems Ambassador at McMaster University, evaluated frontier AI models at Outlier, and was on the founding team at Vosyn.</p>
+                        </details>
+                        <details class="faq-item fade-up">
+                            <summary>Where is Ahmad Abu-Hattab based?</summary>
+                            <p class="faq-answer">Ahmad is based in Toronto, Ontario, Canada, and is currently on co-op at STELCO's Lake Erie Works in Nanticoke, Ontario.</p>
+                        </details>
+                        <details class="faq-item fade-up">
+                            <summary>How can I contact Ahmad Abu-Hattab?</summary>
+                            <p class="faq-answer">You can reach Ahmad by email at <a href="mailto:a.abuhattab5@gmail.com">a.abuhattab5@gmail.com</a> or connect with him on LinkedIn at <a href="https://www.linkedin.com/in/aabuhattab/" target="_blank" rel="noopener noreferrer">linkedin.com/in/aabuhattab</a>.</p>
+                        </details>
                     </div>
                 </div>
             </div>
