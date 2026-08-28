@@ -5,11 +5,11 @@
         xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
         http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
 
-    <!-- Homepage -->
+    <!-- Homepage — profile page for Ahmad Abu-Hattab -->
     <url>
         <loc>https://ahmad.engineer/</loc>
-        <lastmod>2026-05-09</lastmod>
-        <changefreq>monthly</changefreq>
+        <lastmod>2026-08-28</lastmod>
+        <changefreq>weekly</changefreq>
         <priority>1.0</priority>
         <image:image>
             <image:loc>https://ahmad.engineer/images/ahmad-abuhattab-suit.jpg</image:loc>
@@ -62,28 +62,61 @@
         </image:image>
     </url>
 
-    <!-- About Section -->
+    <!-- Photo gallery — dedicated image landing page -->
     <url>
-        <loc>https://ahmad.engineer/#about</loc>
-        <lastmod>2026-05-09</lastmod>
+        <loc>https://ahmad.engineer/photos</loc>
+        <lastmod>2026-08-28</lastmod>
         <changefreq>monthly</changefreq>
-        <priority>0.8</priority>
-    </url>
-
-    <!-- Work Section -->
-    <url>
-        <loc>https://ahmad.engineer/#work</loc>
-        <lastmod>2026-05-09</lastmod>
-        <changefreq>monthly</changefreq>
-        <priority>0.8</priority>
-    </url>
-
-    <!-- Contact Section -->
-    <url>
-        <loc>https://ahmad.engineer/#contact</loc>
-        <lastmod>2026-05-09</lastmod>
-        <changefreq>yearly</changefreq>
-        <priority>0.7</priority>
+        <priority>0.9</priority>
+        <image:image>
+            <image:loc>https://ahmad.engineer/images/ahmad-abuhattab-suit.jpg</image:loc>
+            <image:title>Ahmad Abu-Hattab — Professional Headshot</image:title>
+            <image:caption>Ahmad Abu-Hattab professional headshot in navy suit. Engineer, founder, and CEO of City Centre Firm Corp. Toronto, Canada.</image:caption>
+            <image:geo_location>Toronto, Ontario, Canada</image:geo_location>
+            <image:license>https://ahmad.engineer/</image:license>
+        </image:image>
+        <image:image>
+            <image:loc>https://ahmad.engineer/images/ahmad-abuhattab-photo.jpg</image:loc>
+            <image:title>Ahmad Abu-Hattab in Toronto</image:title>
+            <image:caption>Ahmad Abu-Hattab reading at a restaurant in Toronto, Ontario.</image:caption>
+            <image:geo_location>Toronto, Ontario, Canada</image:geo_location>
+            <image:license>https://ahmad.engineer/</image:license>
+        </image:image>
+        <image:image>
+            <image:loc>https://ahmad.engineer/images/ahmad-abuhattab-portrait.jpg</image:loc>
+            <image:title>Ahmad Abu-Hattab — Portrait</image:title>
+            <image:caption>Ahmad Abu-Hattab portrait. Startup founder and engineer based in Toronto, Canada.</image:caption>
+            <image:geo_location>Toronto, Ontario, Canada</image:geo_location>
+            <image:license>https://ahmad.engineer/</image:license>
+        </image:image>
+        <image:image>
+            <image:loc>https://ahmad.engineer/images/ahmad-abuhattab-basketball.jpg</image:loc>
+            <image:title>Ahmad Abu-Hattab on the Basketball Court</image:title>
+            <image:caption>Ahmad Abu-Hattab playing basketball in Toronto.</image:caption>
+            <image:geo_location>Toronto, Ontario, Canada</image:geo_location>
+            <image:license>https://ahmad.engineer/</image:license>
+        </image:image>
+        <image:image>
+            <image:loc>https://ahmad.engineer/images/ahmad-abuhattab-headshot.jpg</image:loc>
+            <image:title>Ahmad Abu-Hattab — Candid Portrait</image:title>
+            <image:caption>Ahmad Abu-Hattab candid portrait. CEO of City Centre Firm Corp.</image:caption>
+            <image:geo_location>Toronto, Ontario, Canada</image:geo_location>
+            <image:license>https://ahmad.engineer/</image:license>
+        </image:image>
+        <image:image>
+            <image:loc>https://ahmad.engineer/images/ahmad-abuhattab-nightlife.jpg</image:loc>
+            <image:title>Ahmad Abu-Hattab — Toronto Nightlife</image:title>
+            <image:caption>Ahmad Abu-Hattab in Toronto nightlife. Engineer and entrepreneur.</image:caption>
+            <image:geo_location>Toronto, Ontario, Canada</image:geo_location>
+            <image:license>https://ahmad.engineer/</image:license>
+        </image:image>
+        <image:image>
+            <image:loc>https://ahmad.engineer/images/ahmad-abuhattab-toronto-evening.jpg</image:loc>
+            <image:title>Ahmad Abu-Hattab — Toronto Evening</image:title>
+            <image:caption>Ahmad Abu-Hattab on a Toronto evening. STELCO co-op student and McMaster Engineering Physics student.</image:caption>
+            <image:geo_location>Toronto, Ontario, Canada</image:geo_location>
+            <image:license>https://ahmad.engineer/</image:license>
+        </image:image>
     </url>
 
 </urlset>
