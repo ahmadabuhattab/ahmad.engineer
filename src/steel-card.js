@@ -90,8 +90,9 @@ function initializeCard(wrapper) {
     loading = true;
     try {
       const { createSteelworks } = await import('./steelworks.js');
-      model = createSteelworks(mount, fallback);
+      model = await createSteelworks(mount, fallback);
       wrapper.classList.add('steelworks-ready');
+      wrapper.dataset.renderer = model.gpu ? 'webgl' : 'geometry';
       awakenButton.hidden = false;
       render(); schedule();
     } catch {

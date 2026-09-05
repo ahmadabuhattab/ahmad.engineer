@@ -2,9 +2,16 @@ import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
 // A small, fully modeled steelworks. No remote assets or render service needed.
-export function createSteelworks(mount, onContextLost) {
-  const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: 'low-power' });
-  renderer.setClearColor(0x000000, 0);
+export async function createSteelworks(mount, onContextLost) {
+  const canvas = document.createElement('canvas');
+  let context = null;
+  try { context = canvas.getContext('webgl2', { alpha: true, antialias: true, powerPreference: 'low-power' }); } catch { /* Use the geometry renderer below. */ }
+  const gpu = !!context;
+  const renderer = gpu
+    ? new THREE.WebGLRenderer({ canvas, context, alpha: true, antialias: true })
+    : new (await import('three/addons/renderers/SVGRenderer.js')).SVGRenderer();
+  if (gpu) renderer.setClearColor(0x000000, 0);
+  else renderer.setPrecision(2);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.6));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -16,13 +23,16 @@ export function createSteelworks(mount, onContextLost) {
   const camera = new THREE.PerspectiveCamera(33, 1, .1, 60);
   const world = new THREE.Group();
   scene.add(world);
-  const envScene = new RoomEnvironment();
-  const pmrem = new THREE.PMREMGenerator(renderer);
-  const environment = pmrem.fromScene(envScene, .05);
-  scene.environment = environment.texture;
-  scene.environmentIntensity = .75;
-  envScene.dispose();
-  pmrem.dispose();
+  let environment;
+  if (gpu) {
+    const envScene = new RoomEnvironment();
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    environment = pmrem.fromScene(envScene, .05);
+    scene.environment = environment.texture;
+    scene.environmentIntensity = .75;
+    envScene.dispose();
+    pmrem.dispose();
+  }
 
   const materials = {
     steel: new THREE.MeshStandardMaterial({ color: 0x819bae, metalness: .84, roughness: .28 }),
@@ -75,9 +85,10 @@ export function createSteelworks(mount, onContextLost) {
   };
 
   scene.add(new THREE.HemisphereLight(0xbce7ff, 0x2f241b, 2));
-  const key = new THREE.DirectionalLight(0xd9f2ff, 4);
+  if (!gpu) scene.add(new THREE.AmbientLight(0x849bb2, .75));
+  const key = new THREE.DirectionalLight(0xd9f2ff, gpu ? 4 : 1.3);
   key.position.set(-3, 5, 4); scene.add(key);
-  const rim = new THREE.DirectionalLight(0x6caeff, 3);
+  const rim = new THREE.DirectionalLight(0x6caeff, gpu ? 3 : .7);
   rim.position.set(4, 3, -4); scene.add(rim);
   const furnaceLight = new THREE.PointLight(0xff8437, 5, 6, 2);
   furnaceLight.position.set(-.3, .7, 1.2); world.add(furnaceLight);
@@ -188,6 +199,7 @@ export function createSteelworks(mount, onContextLost) {
   });
   const glow = mesh(keep(new THREE.PlaneGeometry(2.8, 1.8)), glowMaterial, -.25, .36, 1.05);
   glow.rotation.x = -Math.PI / 2;
+  glow.visible = gpu;
 
   // One draw call each for deterministic sparks and soft rising steam.
   const sparkCount = 100;
@@ -211,16 +223,18 @@ export function createSteelworks(mount, onContextLost) {
   steamGeometry.setAttribute('size', new THREE.BufferAttribute(steamSize, 1));
   const steamMaterial = new THREE.ShaderMaterial({
     transparent: true, depthWrite: false,
-    uniforms: { pixelRatio: { value: renderer.getPixelRatio() } },
+    uniforms: { pixelRatio: { value: gpu ? renderer.getPixelRatio() : 1 } },
     vertexShader: `attribute float alpha; attribute float size; varying float vAlpha; uniform float pixelRatio;
       void main(){vAlpha=alpha;vec4 mv=modelViewMatrix*vec4(position,1.);gl_Position=projectionMatrix*mv;gl_PointSize=size*pixelRatio*(150./-mv.z);}`,
     fragmentShader: `varying float vAlpha; void main(){float r=length(gl_PointCoord-.5)*2.;float a=pow(max(0.,1.-r*r),3.)*vAlpha;gl_FragColor=vec4(.64,.78,.87,a);}`,
   });
   const steam = new THREE.Points(steamGeometry, steamMaterial);
   steam.frustumCulled = false; world.add(steam);
+  steam.visible = gpu;
 
   let disposed = false;
   let power = 0;
+  let lastVectorFrame = -1;
   const resize = () => {
     if (disposed) return;
     const width = Math.max(1, mount.clientWidth), height = Math.max(1, mount.clientHeight);
@@ -234,6 +248,9 @@ export function createSteelworks(mount, onContextLost) {
 
   const render = ({ time = 0, x = 0, y = 0, energy = 0, orbit: rotation = 0, still = false } = {}) => {
     if (disposed) return;
+    // The CPU geometry fallback is intentionally capped; card tilt stays smooth.
+    if (!gpu && !still && time - lastVectorFrame < 1/12) return;
+    lastVectorFrame = time;
     power = energy;
     const t = still ? 1.8 : time;
     const azimuth = .56 + rotation + x * .12;
@@ -275,12 +292,14 @@ export function createSteelworks(mount, onContextLost) {
     }
     for (const attr of Object.values(steamGeometry.attributes)) attr.needsUpdate = true;
     renderer.render(scene, camera);
+    if (!gpu) renderer.domElement.style.backgroundColor = 'transparent';
   };
   const lost = event => { event.preventDefault(); onContextLost(); };
   renderer.domElement.addEventListener('webglcontextlost', lost);
   render({ still: true });
 
   return {
+    gpu,
     render,
     dispose() {
       if (disposed) return;
@@ -289,8 +308,8 @@ export function createSteelworks(mount, onContextLost) {
       renderer.domElement.removeEventListener('webglcontextlost', lost);
       for (const geometry of geometries) geometry.dispose();
       for (const material of [...Object.values(materials), sparkMaterial, steamMaterial, glowMaterial]) material.dispose();
-      environment.dispose();
-      renderer.dispose();
+      environment?.dispose();
+      renderer.dispose?.();
       renderer.domElement.remove();
     },
   };
