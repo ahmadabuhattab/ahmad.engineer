@@ -10,6 +10,7 @@ function initializeCard(wrapper) {
   const flipButton = wrapper.querySelector('#pokemonFlipBtn');
   const awakenButton = wrapper.querySelector('#pokemonAwakenBtn');
   const motionButton = wrapper.querySelector('#pokemonMotionBtn');
+  const gyroButton = wrapper.querySelector('#pokemonGyroBtn');
   const mount = wrapper.querySelector('#steelworksMount');
   const status = document.getElementById('pokemonCardStatus');
   const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -19,6 +20,7 @@ function initializeCard(wrapper) {
   let pointer = null, dragged = false, suppressClick = false;
   let model = null, loading = false, failed = false, frame = 0, lastTime = 0, time = 0;
   let targetX = 0, targetY = 0, orbitTarget = 0;
+  let gyroEnabled = false, gyroBase = null;
   const state = { x: 0, y: 0, lift: 0, power: 0, orbit: 0, speed: 0 };
   const clamp = (value, low, high) => Math.max(low, Math.min(high, value));
   const stopped = () => reduced || paused;
@@ -27,8 +29,8 @@ function initializeCard(wrapper) {
   function render(dt = 1/60) {
     const still = stopped();
     const ease = 1 - Math.exp(-dt * 9);
-    const aimX = hovering || pointer ? targetX : Math.sin(time * .58) * .28;
-    const aimY = hovering || pointer ? targetY : Math.cos(time * .42) * .13;
+    const aimX = hovering || pointer || gyroEnabled ? targetX : Math.sin(time * .58) * .28;
+    const aimY = hovering || pointer || gyroEnabled ? targetY : Math.cos(time * .42) * .13;
     state.x += ((still ? 0 : aimX) - state.x) * (still ? 1 : ease);
     state.y += ((still ? 0 : aimY) - state.y) * (still ? 1 : ease);
     state.lift += ((still ? 0 : hovering ? 12 : 3 + Math.sin(time * .9) * 3) - state.lift) * ease;
@@ -69,6 +71,7 @@ function initializeCard(wrapper) {
   function syncMotion() {
     wrapper.classList.toggle('is-paused', stopped());
     motionButton.hidden = reduced;
+    gyroButton.hidden = reduced || !coarse.matches || !('DeviceOrientationEvent' in window);
     motionButton.setAttribute('aria-pressed', String(paused));
     motionButton.setAttribute('aria-label', paused ? 'Resume card animation' : 'Pause card animation');
     motionButton.querySelector('[data-motion-icon]').textContent = paused ? '▷' : 'Ⅱ';
@@ -125,6 +128,29 @@ function initializeCard(wrapper) {
     schedule();
   });
   motionButton.addEventListener('click', () => { paused = !paused; syncMotion(); });
+  const onOrientation = event => {
+    if (!gyroEnabled || !visible || stopped() || event.beta == null || event.gamma == null) return;
+    gyroBase ??= { beta: event.beta, gamma: event.gamma };
+    targetX = clamp((event.gamma - gyroBase.gamma) / 24, -1, 1);
+    targetY = clamp((event.beta - gyroBase.beta) / 24, -1, 1);
+  };
+  gyroButton.addEventListener('click', async () => {
+    if (!gyroEnabled && typeof DeviceOrientationEvent.requestPermission === 'function') {
+      try {
+        if (await DeviceOrientationEvent.requestPermission() !== 'granted') {
+          status.textContent = 'Phone tilt was not enabled. You can still drag the card.';
+          return;
+        }
+      } catch { status.textContent = 'Phone tilt is unavailable. You can still drag the card.'; return; }
+    }
+    gyroEnabled = !gyroEnabled;
+    gyroBase = null;
+    if (gyroEnabled) window.addEventListener('deviceorientation', onOrientation);
+    else window.removeEventListener('deviceorientation', onOrientation);
+    gyroButton.setAttribute('aria-pressed', String(gyroEnabled));
+    gyroButton.textContent = gyroEnabled ? 'Phone tilt on' : 'Tilt with phone';
+    schedule();
+  });
 
   // Pointer Events unify mouse, pen and touch; vertical swipes keep native scrolling.
   function aim(event) {
@@ -187,6 +213,7 @@ function initializeCard(wrapper) {
   });
   const visibilityObserver = new IntersectionObserver(([entry]) => {
     visible = entry.isIntersecting;
+    if (!visible) gyroBase = null;
     wrapper.classList.toggle('is-visible', visible);
     if (visible) { loadModel(); schedule(); } else stop();
   }, { rootMargin: '80px' });

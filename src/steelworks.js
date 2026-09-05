@@ -48,8 +48,8 @@ export async function createSteelworks(mount, onContextLost) {
   const geometries = new Set();
   const keep = g => { geometries.add(g); return g; };
   const boxGeometry = keep(new THREE.BoxGeometry(1, 1, 1));
-  const cylGeometry = keep(new THREE.CylinderGeometry(1, 1, 1, 24));
-  const sphereGeometry = keep(new THREE.SphereGeometry(1, 16, 12));
+  const segments = gpu ? 24 : 12;
+  const cylGeometry = keep(new THREE.CylinderGeometry(1, 1, 1, segments));
   const mesh = (geometry, material, x, y, z, parent = world) => {
     const object = new THREE.Mesh(geometry, material);
     object.position.set(x, y, z);
@@ -67,7 +67,7 @@ export async function createSteelworks(mount, onContextLost) {
     return object;
   };
   const ring = (radius, thickness, x, y, z, material = materials.light, arc = Math.PI * 2, parent = world) => {
-    const object = mesh(keep(new THREE.TorusGeometry(radius, thickness, 8, 64, arc)), material, x, y, z, parent);
+    const object = mesh(keep(new THREE.TorusGeometry(radius, thickness, gpu ? 8 : 4, gpu ? 64 : 28, arc)), material, x, y, z, parent);
     object.rotation.x = Math.PI / 2;
     return object;
   };
@@ -81,7 +81,7 @@ export async function createSteelworks(mount, onContextLost) {
   };
   const pipe = (points, radius, material = materials.steel) => {
     const curve = new THREE.CatmullRomCurve3(points.map(p => new THREE.Vector3(...p)));
-    return mesh(keep(new THREE.TubeGeometry(curve, 24, radius, 8, false)), material, 0, 0, 0);
+    return mesh(keep(new THREE.TubeGeometry(curve, gpu ? 24 : 12, radius, gpu ? 8 : 4, false)), material, 0, 0, 0);
   };
 
   scene.add(new THREE.HemisphereLight(0xbce7ff, 0x2f241b, 2));
@@ -235,6 +235,7 @@ export async function createSteelworks(mount, onContextLost) {
   let disposed = false;
   let power = 0;
   let lastVectorFrame = -1;
+  let lastVectorPose = '';
   const resize = () => {
     if (disposed) return;
     const width = Math.max(1, mount.clientWidth), height = Math.max(1, mount.clientHeight);
@@ -250,9 +251,14 @@ export async function createSteelworks(mount, onContextLost) {
     if (disposed) return;
     // The CPU geometry fallback is intentionally capped; card tilt stays smooth.
     if (!gpu && !still && time - lastVectorFrame < 1/12) return;
+    if (!gpu) {
+      const pose = [x.toFixed(1), y.toFixed(1), energy.toFixed(2), rotation.toFixed(2), mount.clientWidth, mount.clientHeight].join('/');
+      if (pose === lastVectorPose) return;
+      lastVectorPose = pose;
+    }
     lastVectorFrame = time;
     power = energy;
-    const t = still ? 1.8 : time;
+    const t = still || !gpu ? 1.8 : time;
     const azimuth = .56 + rotation + x * .12;
     const distance = 8.8 - power * .65;
     camera.position.set(Math.sin(azimuth) * distance, 5.5 + y * .32, Math.cos(azimuth) * distance);

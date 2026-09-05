@@ -202,7 +202,7 @@
 .is-awakened .pkmn-art-horizon { background: radial-gradient(ellipse at 50% 65%, #ff833551, transparent 65%); }
 .steelworks-mount {
   position: absolute;
-  inset: -58px -34px -8px;
+  inset: -54px -34px 26px;
   transform: translateZ(calc(18px + var(--power) * 38px));
   pointer-events: none;
   opacity: 0;
@@ -304,7 +304,7 @@
   .pokemon-encounter-text { letter-spacing: .11em; }
   .pokemon-card-face { padding: 16px; border-radius: 17px; }
   .pkmn-art { height: 202px; }
-  .steelworks-mount { inset: -40px -18px -3px; }
+  .steelworks-mount { inset: -36px -18px 28px; }
   .pkmn-stage { font-size: .75rem; letter-spacing: -.025em; }
   .pkmn-name { font-size: 1.6rem; }
   .pkmn-location { letter-spacing: -.02em; }
