@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "npx serve public",
-    "build": "echo 'Static site - no build step required'"
+    "build": "node scripts/build-card.mjs"
   },
   "keywords": [
     "ahmad abu-hattab",
@@ -15,5 +15,11 @@
     "personal website"
   ],
   "author": "Ahmad Abu-Hattab",
-  "license": "UNLICENSED"
+  "license": "UNLICENSED",
+  "dependencies": {
+    "three": "0.180.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.10"
+  }
 }
