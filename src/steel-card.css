@@ -173,7 +173,7 @@
 .pkmn-hp-label { font-size: .75rem; color: #91a6bd; }
 .pkmn-art {
   position: relative;
-  height: 228px;
+  height: 258px;
   margin-top: 3px;
   border-radius: 12px;
   background: radial-gradient(ellipse at 50% 55%, #1c3e56, #08131e 74%);
@@ -202,7 +202,7 @@
 .is-awakened .pkmn-art-horizon { background: radial-gradient(ellipse at 50% 65%, #ff833551, transparent 65%); }
 .steelworks-mount {
   position: absolute;
-  inset: -54px -34px 26px;
+  inset: -54px -34px 56px;
   transform: translateZ(calc(18px + var(--power) * 38px));
   pointer-events: none;
   opacity: 0;
@@ -303,8 +303,8 @@
   .pokemon-encounter { gap: 1.6rem; }
   .pokemon-encounter-text { letter-spacing: .11em; }
   .pokemon-card-face { padding: 16px; border-radius: 17px; }
-  .pkmn-art { height: 202px; }
-  .steelworks-mount { inset: -36px -18px 28px; }
+  .pkmn-art { height: 232px; }
+  .steelworks-mount { inset: -36px -18px 58px; }
   .pkmn-stage { font-size: .75rem; letter-spacing: -.025em; }
   .pkmn-name { font-size: 1.6rem; }
   .pkmn-location { letter-spacing: -.02em; }
