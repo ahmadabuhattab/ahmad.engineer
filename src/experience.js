@@ -18,7 +18,7 @@ function setMotion() {
     motionButton.hidden = false;
     motionButton.disabled = false;
     motionButton.setAttribute('aria-pressed', String(paused));
-    motionButton.setAttribute('aria-label', paused ? 'Resume scene animation' : 'Pause scene animation');
+    motionButton.setAttribute('aria-label', paused ? (motionPreference.matches && userPaused === null ? 'Enable animation' : 'Resume scene animation') : 'Pause scene animation');
     motionLabel.textContent = paused ? (motionPreference.matches && userPaused === null ? 'Enable animation' : 'Motion paused') : 'Pause motion';
   }
   document.dispatchEvent(new CustomEvent('experience-motion', { detail: { paused } }));
