@@ -32,6 +32,14 @@ The share preview is `public/og-portfolio-2026.jpg` (1200 × 630). The lightweig
 - Navigation, project disclosures, FAQs, collector-card flip, scene pause/resume, reduced motion, gallery navigation, and content without JavaScript verified.
 - Explosion and reconstruction verified on desktop and mobile, including keyboard activation, unchanged pixels while paused, offscreen suspension, resizing across the breakpoint, and WebGL context loss/recovery. The shared timeline restores exact home positions across 30 sampled cycles.
 - Automated WCAG A/AA accessibility scan: zero violations.
-- Local Lighthouse mobile audit with the orbital animation: performance 97, accessibility 100, best practices 100, SEO 100; CLS 0 and total blocking time 0ms. These are lab measurements, not guarantees of field performance or search rankings.
+- Local Lighthouse mobile audit after the interaction fixes: performance 96, accessibility 100, best practices 100, SEO 100; CLS 0 and total blocking time 60ms. These are lab measurements, not guarantees of field performance or search rankings.
 
 Production verification must also check the canonical domain, Vercel redirects, sitemap, robots, verification files, share image, and real 404 responses.
+
+## Interaction and responsive audit
+
+- Exercised every homepage link, all seven project/FAQ disclosures, and hero controls at 320, 390, 768, and 1440px: 124 checks passed with zero page errors. Email actions were checked without sending mail; external-link targets were verified. LinkedIn blocks automated HTTP checks, while the configured profile link opens correctly.
+- All 25 collector-card checks pass, including keyboard, touch, permission-result simulations for phone tilt, reduced motion, renderer fallbacks, and no-JavaScript readability. The card source and markup remain unchanged; a page-level no-script style hides its inactive controls when scripting is disabled.
+- All gallery navigation links, seven photos, captions, deep links, and 404 recovery links were checked. Fixed the breadcrumb overlay blocking navigation, low-contrast gallery text, delayed photo reveals, and photo anchor positioning.
+- Layout inspection covered 320–1920px widths and landscape. Fixed enlarged-text clipping, wrapping navigation, metric columns, photo heading layout, and zero-width waveform bars on narrow screens. Follow-up checks at 200% text enlargement pass without text overflow.
+- Chrome and Edge desktop/mobile checks pass. Gallery and homepage accessibility scans report zero violations. Phone layouts and sensor permission results are emulated; physical sensor calibration depends on the visitor's device.
