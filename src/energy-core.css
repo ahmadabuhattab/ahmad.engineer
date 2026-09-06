@@ -1,0 +1,92 @@
+.energy-scene {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 320px;
+  isolation: isolate;
+  contain: layout style;
+}
+
+.energy-scene::before {
+  content: "";
+  position: absolute;
+  inset: 9%;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(175, 163, 108, .075), rgba(85, 143, 112, .025) 40%, transparent 69%);
+  pointer-events: none;
+}
+
+.energy-scene canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transition: opacity 700ms ease;
+}
+
+.energy-scene[data-render="webgl"] canvas { opacity: 1; }
+
+.energy-poster{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none;transition:opacity 700ms ease;z-index:1;mix-blend-mode:lighten}
+.energy-poster~.energy-fallback{display:none}
+.energy-scene[data-render="webgl"] .energy-poster{opacity:0}
+.energy-scene:not([data-render="webgl"]) .energy-poster{animation:energy-drift 22s ease-in-out infinite alternate}
+.motion-paused .energy-poster{animation-play-state:paused}
+@keyframes energy-drift{from{transform:rotate(-7deg) scale(.96)}to{transform:rotate(7deg) scale(1.015)}}
+
+.energy-fallback {
+  position: absolute;
+  inset: 13%;
+  display: grid;
+  place-items: center;
+  perspective: 700px;
+  opacity: 1;
+  transition: opacity 700ms ease;
+  pointer-events: none;
+}
+
+.energy-scene[data-render="webgl"] .energy-fallback { opacity: 0; }
+
+.energy-fallback i {
+  position: absolute;
+  width: 95%;
+  height: 95%;
+  border: 1px solid rgba(222, 202, 161, .52);
+  border-radius: 50%;
+  box-shadow: 0 0 9px rgba(241, 196, 122, .12), inset 0 0 10px rgba(241, 196, 122, .05);
+  transform: rotateZ(-27deg) rotateX(65deg);
+}
+
+.energy-fallback i:nth-child(2) {
+  width: 77%; height: 77%;
+  border-color: rgba(185, 218, 204, .54);
+  border-width: 2px;
+  transform: rotateZ(37deg) rotateY(65deg);
+}
+
+.energy-fallback i:nth-child(3) {
+  width: 61%; height: 61%;
+  border-width: 2px;
+  transform: rotateZ(29deg) rotateX(54deg);
+}
+
+.energy-fallback i:nth-child(4) {
+  width: 39%; height: 39%;
+  opacity: .45;
+  transform: rotateZ(-27deg) rotateY(54deg);
+}
+
+.energy-fallback b {
+  display: block;
+  width: 24%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 32%, #fff8db, #f4dba0 39%, #c79a58 73%, #efd3a0 96%);
+  box-shadow: 0 0 30px 5px #edce944f, 0 0 100px 25px #e5bb5920;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .energy-scene canvas, .energy-fallback, .energy-poster { transition: none; animation:none!important; }
+}
