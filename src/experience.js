@@ -3,20 +3,23 @@ import './experience.css';
 const motionPreference = matchMedia('(prefers-reduced-motion: reduce)');
 const motionButton = document.getElementById('experienceMotion');
 const motionLabel = motionButton?.querySelector('[data-motion-label]');
-let userPaused = false;
-try { userPaused = sessionStorage.getItem('experience-paused') === 'true'; } catch {}
+let userPaused = null;
+try {
+  const saved = sessionStorage.getItem('experience-paused');
+  if (saved === 'true' || saved === 'false') userPaused = saved === 'true';
+} catch {}
 let observer;
 
 function setMotion() {
-  const paused = motionPreference.matches || userPaused;
+  const paused = userPaused ?? motionPreference.matches;
   document.body.classList.toggle('motion-enabled', !paused);
   document.body.classList.toggle('motion-paused', paused);
   if (motionButton) {
     motionButton.hidden = false;
-    motionButton.disabled = motionPreference.matches;
+    motionButton.disabled = false;
     motionButton.setAttribute('aria-pressed', String(paused));
-    motionButton.setAttribute('aria-label', motionPreference.matches ? 'Reduced motion enabled in your device settings' : paused ? 'Resume scene animation' : 'Pause scene animation');
-    motionLabel.textContent = motionPreference.matches ? 'Reduced motion' : paused ? 'Motion paused' : 'Pause motion';
+    motionButton.setAttribute('aria-label', paused ? 'Resume scene animation' : 'Pause scene animation');
+    motionLabel.textContent = paused ? (motionPreference.matches && userPaused === null ? 'Enable animation' : 'Motion paused') : 'Pause motion';
   }
   document.dispatchEvent(new CustomEvent('experience-motion', { detail: { paused } }));
   if (paused) {
@@ -27,7 +30,7 @@ function setMotion() {
 setMotion();
 motionPreference.addEventListener('change', setMotion);
 motionButton?.addEventListener('click', () => {
-  userPaused = !userPaused;
+  userPaused = !document.body.classList.contains('motion-paused');
   try { sessionStorage.setItem('experience-paused', String(userPaused)); } catch {}
   setMotion();
 });

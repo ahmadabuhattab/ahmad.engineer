@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { sampleCycle, CYCLE_DURATION, BURST_START } from './energy-cycle.js';
 import './energy-core.css';
 
 // A small, self-contained armillary: real geometry, a luminous nucleus, no
@@ -63,13 +64,13 @@ function initializeArmillary(host, canvas) {
     return sprite;
   }
 
-  const halo = glow(0xe7bc78, 5.1, 0.36);
+  const halo = glow(0xe7bc78, 6.2, 0.5);
   instrument.add(halo);
   const innerGlow = glow(0xffdfab, 2.75, 0.56);
   instrument.add(innerGlow);
 
   const nucleusMaterial = retain(new THREE.ShaderMaterial({
-    uniforms: { uTime: { value: 0 } },
+    uniforms: { uTime: { value: 0 }, uHeat: { value: 0 } },
     vertexShader: `
       varying vec3 vNormal;
       varying vec3 vPosition;
@@ -84,6 +85,7 @@ function initializeArmillary(host, canvas) {
     `,
     fragmentShader: `
       uniform float uTime;
+      uniform float uHeat;
       varying vec3 vNormal;
       varying vec3 vPosition;
       varying vec3 vView;
@@ -102,7 +104,7 @@ function initializeArmillary(host, canvas) {
       }
       void main() {
         vec3 p = vPosition * 7.5;
-        p.y += uTime * .07;
+        p.y += uTime * (.12 + uHeat * .12);
         float n = noise(p) * .65 + noise(p * 2.7) * .25 + noise(p * 6.5) * .1;
         float filaments = pow(1. - abs(sin(p.y * 2.1 + n * 8. + p.x * .8)), 7.);
         float facing = max(dot(normalize(vNormal), normalize(vView)), 0.);
@@ -111,7 +113,7 @@ function initializeArmillary(host, canvas) {
         vec3 amber = vec3(1.0, .57, .19);
         vec3 ivory = vec3(1.0, .94, .71);
         vec3 color = mix(amber, ivory, n * .8 + .22) * light;
-        color += ivory * (filaments * .45 + edge * .95);
+        color += ivory * (filaments * (.45 + uHeat * .8) + edge * .95);
         gl_FragColor = vec4(color, 1.0);
         #include <tonemapping_fragment>
         #include <colorspace_fragment>
@@ -136,6 +138,7 @@ function initializeArmillary(host, canvas) {
   const beadMaterial = retain(new THREE.MeshBasicMaterial({ color: 0xffefd4, toneMapped: false }));
   const beadGeometry = retain(new THREE.SphereGeometry(0.033, 10, 8));
   const orbits = [];
+  const transform = new THREE.Object3D();
 
   function makeOrbit({ radius, width, tilt, speed, cool = false, phase = 0 }) {
     const frame = new THREE.Group();
@@ -144,26 +147,36 @@ function initializeArmillary(host, canvas) {
     const rotor = new THREE.Group();
     rotor.rotation.z = phase;
     frame.add(rotor);
+    const segmentCount = 48;
+    const halfArc = Math.PI / segmentCount * .975;
     const shape = new THREE.Shape();
-    shape.absarc(0, 0, radius + width / 2, 0, Math.PI * 2, false);
-    const hole = new THREE.Path();
-    hole.absarc(0, 0, radius - width / 2, 0, Math.PI * 2, true);
-    shape.holes.push(hole);
-    const band = new THREE.Mesh(
-      retain(new THREE.ExtrudeGeometry(shape, { depth: 0.024, bevelEnabled: false, curveSegments: 112 })),
-      cool ? coolMetal : metal,
-    );
-    band.position.z = -0.012;
+    shape.absarc(0, 0, radius + width / 2, -halfArc, halfArc, false);
+    shape.absarc(0, 0, radius - width / 2, halfArc, -halfArc, true);
+    shape.closePath();
+    const segmentGeometry = retain(new THREE.ExtrudeGeometry(shape, {
+      depth: .034, bevelEnabled: false, curveSegments: 5,
+    }));
+    segmentGeometry.translate(-radius, 0, -.017);
+    const band = retain(new THREE.InstancedMesh(segmentGeometry, cool ? coolMetal : metal, segmentCount));
+    band.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    band.frustumCulled = false;
+    const pieces = Array.from({ length: segmentCount }, (_, i) => {
+      const angle = i / segmentCount * Math.PI * 2;
+      const noise = Math.sin(i * 73.13 + radius * 9.1);
+      return { angle, noise, x: Math.cos(angle) * radius, y: Math.sin(angle) * radius };
+    });
     rotor.add(band);
 
     // Interrupted rails and index marks give the orbit a manufactured quality.
+    const details = new THREE.Group();
+    rotor.add(details);
     [0.14, Math.PI + 0.14].forEach(start => {
       const rail = new THREE.Mesh(
         retain(new THREE.TorusGeometry(radius + width * 0.53, 0.007, 5, 100, Math.PI * 0.83)),
         cool ? coolTrace : warmTrace,
       );
       rail.rotation.z = start;
-      rotor.add(rail);
+      details.add(rail);
     });
     const ticks = [];
     const tickCount = 108;
@@ -181,15 +194,15 @@ function initializeArmillary(host, canvas) {
       color: cool ? ice : gold, transparent: true, opacity: cool ? 0.35 : 0.44,
       depthWrite: false,
     }));
-    rotor.add(new THREE.LineSegments(tickGeometry, tickMaterial));
+    details.add(new THREE.LineSegments(tickGeometry, tickMaterial));
 
     const bead = new THREE.Mesh(beadGeometry, beadMaterial);
     bead.position.set(radius, 0, 0.035);
-    rotor.add(bead);
+    details.add(bead);
     const beadGlow = glow(cool ? 0xb9eadc : 0xffdbae, 0.43, 0.83);
     beadGlow.position.copy(bead.position);
-    rotor.add(beadGlow);
-    orbits.push({ rotor, speed, phase });
+    details.add(beadGlow);
+    orbits.push({ rotor, frame, tilt, band, pieces, details, speed, phase });
   }
 
   makeOrbit({ radius: 2.61, width: 0.050, tilt: [1.13, 0.27, -0.39], speed: 0.035, phase: 0.8 });
@@ -246,6 +259,103 @@ function initializeArmillary(host, canvas) {
   const dust = new THREE.Points(dustGeometry, dustMaterial);
   scene.add(dust);
 
+  // Instanced facets give the nucleus physical pieces, in two draw calls
+  // instead of one material/mesh/scene object for every shard.
+  const shardCount = 112;
+  const shardGeometry = retain(new THREE.OctahedronGeometry(.082, 0));
+  const shardMaterial = retain(new THREE.MeshStandardMaterial({
+    color: 0xffe8b8, metalness: .55, roughness: .22,
+    emissive: 0xf4a84b, emissiveIntensity: .45,
+  }));
+  const shards = retain(new THREE.InstancedMesh(shardGeometry, shardMaterial, shardCount));
+  shards.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  shards.frustumCulled = false;
+  instrument.add(shards);
+  const shardHomes = Array.from({ length: shardCount }, (_, i) => {
+    const y = 1 - (i + .5) / shardCount * 2;
+    const angle = i * 2.3999632297;
+    const r = Math.sqrt(1 - y * y);
+    return { x: Math.cos(angle) * r, y, z: Math.sin(angle) * r, seed: random() };
+  });
+  shardHomes.forEach((p, i) => shards.setColorAt(i, i % 7 === 0 ? ice : gold));
+
+  const sparkCount = 820;
+  const sparkHomes = [], sparkTravel = [], sparkSeeds = [];
+  for (let i = 0; i < sparkCount; i++) {
+    const a = random() * Math.PI * 2;
+    const y = random() * 2 - 1;
+    const r = Math.sqrt(1 - y * y);
+    const homeR = .5 + random() * .4;
+    const travel = 1.7 + random() * 2;
+    sparkHomes.push(Math.cos(a) * r * homeR, y * homeR, Math.sin(a) * r * homeR);
+    sparkTravel.push(Math.cos(a) * r * travel, y * travel, Math.sin(a) * r * travel);
+    sparkSeeds.push(random());
+  }
+  const sparkGeometry = retain(new THREE.BufferGeometry());
+  sparkGeometry.setAttribute('position', new THREE.Float32BufferAttribute(sparkHomes, 3));
+  sparkGeometry.setAttribute('aTravel', new THREE.Float32BufferAttribute(sparkTravel, 3));
+  sparkGeometry.setAttribute('aSeed', new THREE.Float32BufferAttribute(sparkSeeds, 1));
+  const sparkMaterial = retain(new THREE.ShaderMaterial({
+    transparent: true, blending: THREE.AdditiveBlending, depthWrite: false,
+    uniforms: { uTime: { value: 0 }, uScatter: { value: 0 }, uHeat: { value: 0 }, uDpr: { value: 1 } },
+    vertexShader: `
+      attribute vec3 aTravel;
+      attribute float aSeed;
+      uniform float uTime, uScatter, uHeat, uDpr;
+      varying float vSeed, vAlpha;
+      void main() {
+        vec3 p = position + aTravel * uScatter;
+        float twist = uScatter * (1.5 + aSeed * 1.2 + uTime * .09);
+        p.xz = mat2(cos(twist), -sin(twist), sin(twist), cos(twist)) * p.xz;
+        p.y += sin(uScatter * 3.14159) * sin(aSeed * 45. + uTime * .65) * .45;
+        vec4 mv = modelViewMatrix * vec4(p, 1.);
+        gl_Position = projectionMatrix * mv;
+        gl_PointSize = clamp((2. + aSeed * 2. + uHeat * 3.) * uDpr * 8. / -mv.z, 1., 11.);
+        vSeed = aSeed;
+        vAlpha = .08 + uHeat * .86;
+      }
+    `,
+    fragmentShader: `
+      varying float vSeed, vAlpha;
+      void main() {
+        float radius = length(gl_PointCoord - .5) * 2.;
+        if (radius > 1.) discard;
+        float alpha = exp(-radius * radius * 5.) * vAlpha;
+        vec3 color = mix(vec3(1., .7, .3), vec3(.5, .94, 1.), step(.8, vSeed));
+        gl_FragColor = vec4(color, alpha);
+      }
+    `,
+  }));
+  const sparks = new THREE.Points(sparkGeometry, sparkMaterial);
+  sparks.frustumCulled = false;
+  instrument.add(sparks);
+
+  const waves = Array.from({ length: 3 }, (_, i) => {
+    const material = retain(new THREE.MeshBasicMaterial({
+      color: i === 1 ? 0xa3efdd : 0xffd6a0,
+      transparent: true, opacity: 0, depthWrite: false,
+      side: THREE.DoubleSide, blending: THREE.AdditiveBlending,
+    }));
+    const wave = new THREE.Mesh(retain(new THREE.RingGeometry(.987, 1.007, 128)), material);
+    wave.rotation.set(i === 1 ? 1.12 : .15 * i, .1, -.2);
+    scene.add(wave);
+    return wave;
+  });
+  const flare = glow(0xffd7a0, 1, 0);
+  flare.scale.set(8, .12, 1);
+  scene.add(flare);
+
+  const coronaGeometry = retain(new THREE.BufferGeometry());
+  const coronaPoints = new Float32Array(3 * 128 * 6);
+  coronaGeometry.setAttribute('position', new THREE.BufferAttribute(coronaPoints, 3).setUsage(THREE.DynamicDrawUsage));
+  const coronaMaterial = retain(new THREE.LineBasicMaterial({
+    color: 0xbee7d4, transparent: true, opacity: .25,
+    depthWrite: false, blending: THREE.AdditiveBlending,
+  }));
+  const corona = new THREE.LineSegments(coronaGeometry, coronaMaterial);
+  corona.frustumCulled = false;
+  instrument.add(corona);
+
   let isVisible = true;
   let isPaused = document.body.classList.contains('motion-paused');
   let disposed = false;
@@ -253,23 +363,114 @@ function initializeArmillary(host, canvas) {
   let frameId = 0;
   let lastFrame = 0;
   let elapsed = 0;
+  let cycleOffset = 0;
+  let spinOffset = 0;
   let pointerX = 0;
   let pointerY = 0;
   let easedX = 0;
   let easedY = 0;
+  let baseCameraDistance = 10.1;
+  let lastPhase = '';
 
   function canAnimate() {
-    return !disposed && !contextLost && isVisible && !document.hidden && !isPaused && !reducedMotion.matches;
+    return !disposed && !contextLost && isVisible && !document.hidden && !isPaused;
   }
 
   function render() {
-    instrument.rotation.set(-0.055 + easedY * 0.095, 0.10 + easedX * 0.15 + Math.sin(elapsed * 0.055) * 0.08, -0.07);
-    nucleus.rotation.y = elapsed * 0.022;
+    const cycle = sampleCycle(elapsed + cycleOffset);
+    cycle.spin += spinOffset;
+    const { scatter, charge, shock, heat } = cycle;
+    if (cycle.phase !== lastPhase) {
+      lastPhase = cycle.phase;
+      host.dataset.phase = lastPhase;
+      document.dispatchEvent(new CustomEvent('energy-phase', { detail: cycle }));
+    }
+    instrument.rotation.set(-.055 + easedY * .15 + Math.sin(elapsed * .23) * .09,
+      .1 + easedX * .23 + elapsed * .07, -.07 + Math.sin(elapsed * .14) * .06);
+    camera.position.z = baseCameraDistance + scatter * 3.2 + charge * .25;
+    nucleus.rotation.y = elapsed * .15;
+    nucleus.scale.setScalar(Math.max(.035, (1 - Math.min(1, scatter * 2.7)) * (1 - charge * .25)));
     nucleusMaterial.uniforms.uTime.value = elapsed;
-    for (const { rotor, speed, phase } of orbits) rotor.rotation.z = phase + elapsed * speed;
-    dust.rotation.y = elapsed * -0.012;
+    nucleusMaterial.uniforms.uHeat.value = heat;
+    for (const orbit of orbits) {
+      const { rotor, frame, tilt, band, pieces, details, speed, phase } = orbit;
+      rotor.rotation.z = phase + elapsed * speed * 2.8 + cycle.spin * .22;
+      frame.rotation.set(tilt[0] + Math.sin(elapsed * .17 + phase) * .15,
+        tilt[1] + Math.cos(elapsed * .2 + phase) * .14, tilt[2] + scatter * .35);
+      frame.scale.setScalar(1 - charge * .14);
+      details.visible = scatter < .025;
+      for (let i = 0; i < pieces.length; i++) {
+        const p = pieces[i];
+        const twist = scatter * (.75 + p.noise * .5);
+        const c = Math.cos(twist), s = Math.sin(twist);
+        const stretch = 1 + scatter * (.4 + p.noise * .09);
+        transform.position.set((p.x * c - p.y * s) * stretch,
+          (p.x * s + p.y * c) * stretch, scatter * (p.noise * 1.9 + Math.sin(i * 2.1 + elapsed * .3) * .35));
+        transform.rotation.set(scatter * (1.8 + p.noise), scatter * p.noise * 2.5,
+          p.angle + twist + scatter * (p.noise * 1.4));
+        transform.scale.setScalar(1 + scatter * .35);
+        transform.updateMatrix();
+        band.setMatrixAt(i, transform.matrix);
+      }
+      band.instanceMatrix.needsUpdate = true;
+    }
+    shards.visible = scatter > .001;
+    if (shards.visible) {
+      for (let i = 0; i < shardHomes.length; i++) {
+        const p = shardHomes[i];
+        const radius = .63 + scatter * (1.6 + p.seed * 1.35);
+        const angle = scatter * (1.9 + p.seed + elapsed * .06);
+        const c = Math.cos(angle), s = Math.sin(angle);
+        transform.position.set((p.x * c - p.z * s) * radius,
+          p.y * radius + Math.sin(scatter * Math.PI) * Math.sin(p.seed * 26 + elapsed * .7) * .2,
+          (p.x * s + p.z * c) * radius);
+        transform.rotation.set(p.seed * 6 + scatter * elapsed * .2, p.seed * 8 + scatter * 3, scatter * p.seed * 4);
+        const size = Math.min(1, scatter * 7) * (.65 + p.seed * .85);
+        transform.scale.set(size * .7, size * (1.1 + p.seed), size * .55);
+        transform.updateMatrix();
+        shards.setMatrixAt(i, transform.matrix);
+      }
+      shards.instanceMatrix.needsUpdate = true;
+    }
+    sparkMaterial.uniforms.uTime.value = elapsed;
+    sparkMaterial.uniforms.uScatter.value = scatter;
+    sparkMaterial.uniforms.uHeat.value = heat;
+    sparkMaterial.uniforms.uDpr.value = renderer.getPixelRatio();
+    for (let i = 0; i < waves.length; i++) {
+      const progress = (shock - i * .1) / (1 - i * .1);
+      const wave = waves[i];
+      wave.visible = progress > 0 && progress < 1;
+      wave.scale.setScalar(.7 + Math.max(0, progress) * 5.1);
+      wave.material.opacity = wave.visible ? Math.sin(progress * Math.PI) * .34 * (1 - progress) : 0;
+    }
+    flare.material.opacity = shock > 0 ? Math.sin(shock * Math.PI) * (1 - shock) * .8 : charge * .1;
+    flare.scale.x = 6 + scatter * 3;
+    let at = 0;
+    const shell = 1.04 + scatter * 2.55 - charge * .2;
+    for (let lane = 0; lane < 3; lane++) {
+      for (let i = 0; i < 128; i++) {
+        for (const end of [0, .62]) {
+          const a = (i + end) / 128 * Math.PI * 2;
+          const r = shell + Math.sin(a * 6 + elapsed * (1 + heat) + lane * 2) * (.055 + heat * .08);
+          const y = Math.sin(a) * r;
+          const z = Math.sin(a * 3 + elapsed * .8 + lane) * (.13 + scatter * .14);
+          const tilt = lane * 1.15 + elapsed * .12;
+          coronaPoints[at++] = Math.cos(a) * r;
+          coronaPoints[at++] = y * Math.cos(tilt) - z * Math.sin(tilt);
+          coronaPoints[at++] = y * Math.sin(tilt) + z * Math.cos(tilt);
+        }
+      }
+    }
+    coronaGeometry.attributes.position.needsUpdate = true;
+    coronaMaterial.opacity = .22 + heat * .5;
+    dust.rotation.y = elapsed * -.028;
     dust.rotation.z = 0.08;
-    halo.material.opacity = 0.33 + Math.sin(elapsed * 0.42) * 0.025;
+    dust.scale.setScalar(1 + scatter * .28);
+    halo.scale.setScalar(6.2 + scatter * 3.2 - charge * .5);
+    halo.material.opacity = .44 + heat * .32 + Math.sin(elapsed * .75) * .035;
+    innerGlow.scale.setScalar(2.5 + scatter * 2.1);
+    innerGlow.material.opacity = .48 + charge * .45 + scatter * .13;
+    heartLight.intensity = 13 + heat * 14;
     renderer.render(scene, camera);
   }
 
@@ -279,8 +480,9 @@ function initializeArmillary(host, canvas) {
     const minimumInterval = smallScreen.matches ? 1000 / 30 : 1000 / 45;
     const deltaMs = timestamp - lastFrame;
     if (deltaMs >= minimumInterval) {
-      elapsed += Math.min(deltaMs / 1000, 0.065);
-      lastFrame = timestamp - (deltaMs % minimumInterval);
+      const remainder = deltaMs % minimumInterval;
+      elapsed += Math.min((deltaMs - remainder) / 1000, 0.1);
+      lastFrame = timestamp - remainder;
       easedX += (pointerX - easedX) * 0.06;
       easedY += (pointerY - easedY) * 0.06;
       render();
@@ -300,7 +502,8 @@ function initializeArmillary(host, canvas) {
     const { width, height } = host.getBoundingClientRect();
     if (!width || !height) return;
     camera.aspect = width / height;
-    camera.position.z = Math.max(10.1, 10.1 / camera.aspect);
+    baseCameraDistance = Math.max(10.1, 10.1 / camera.aspect);
+    camera.position.z = baseCameraDistance;
     camera.updateProjectionMatrix();
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, smallScreen.matches ? 1.25 : 1.6));
     renderer.setSize(width, height, false);
@@ -314,6 +517,14 @@ function initializeArmillary(host, canvas) {
     pointerY = ((event.clientY - bounds.top) / bounds.height - 0.5) * 2;
   }
   function onPointerLeave() { pointerX = 0; pointerY = 0; }
+  function onBurst() {
+    const current = elapsed + cycleOffset;
+    if (!canAnimate() || sampleCycle(current).bursting) return;
+    const target = current + ((BURST_START - current % CYCLE_DURATION + CYCLE_DURATION) % CYCLE_DURATION) + 1e-9;
+    spinOffset += sampleCycle(current).spin - sampleCycle(target).spin;
+    cycleOffset += target - current;
+    render();
+  }
   function onMotion(event) {
     if (typeof event.detail?.paused !== 'boolean') return;
     isPaused = event.detail.paused;
@@ -344,6 +555,7 @@ function initializeArmillary(host, canvas) {
   host.addEventListener('pointerleave', onPointerLeave, { passive: true });
   document.addEventListener('visibilitychange', syncAnimation);
   document.addEventListener('experience-motion', onMotion);
+  document.addEventListener('energy-burst', onBurst);
   reducedMotion.addEventListener('change', syncAnimation);
   canvas.addEventListener('webglcontextlost', onContextLost);
   canvas.addEventListener('webglcontextrestored', onContextRestored);
@@ -360,6 +572,7 @@ function initializeArmillary(host, canvas) {
     host.removeEventListener('pointerleave', onPointerLeave);
     document.removeEventListener('visibilitychange', syncAnimation);
     document.removeEventListener('experience-motion', onMotion);
+    document.removeEventListener('energy-burst', onBurst);
     reducedMotion.removeEventListener('change', syncAnimation);
     canvas.removeEventListener('webglcontextlost', onContextLost);
     canvas.removeEventListener('webglcontextrestored', onContextRestored);
