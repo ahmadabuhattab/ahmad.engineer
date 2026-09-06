@@ -1,15 +1,5 @@
-# robots.txt for ahmad.engineer
-# All search engines: crawl everything, as fast as you like.
-
+# Public portfolio pages and image assets are available to crawlers.
 User-agent: *
 Allow: /
 
-# Image crawlers — full access (Google Images, Bing Images)
-User-agent: Googlebot-Image
-Allow: /
-
-User-agent: Bingbot
-Allow: /
-
-# Sitemap location
 Sitemap: https://ahmad.engineer/sitemap.xml
