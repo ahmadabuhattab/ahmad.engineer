@@ -18,8 +18,11 @@ function setMotion() {
     motionButton.hidden = false;
     motionButton.disabled = false;
     motionButton.setAttribute('aria-pressed', String(paused));
-    motionButton.setAttribute('aria-label', paused ? (motionPreference.matches && userPaused === null ? 'Enable animation' : 'Resume scene animation') : 'Pause scene animation');
-    motionLabel.textContent = paused ? (motionPreference.matches && userPaused === null ? 'Enable animation' : 'Motion paused') : 'Pause motion';
+    motionLabel.textContent = paused ? (motionPreference.matches && userPaused === null ? 'Enable animation' : 'Resume motion') : 'Pause motion';
+    motionButton.setAttribute('aria-label', motionLabel.textContent);
+    const icon = motionButton.querySelector('svg path');
+    icon?.setAttribute('d', paused ? 'M3 2L10 6L3 10Z' : 'M3 2v8M9 2v8');
+    icon?.setAttribute('fill', 'none');
   }
   document.dispatchEvent(new CustomEvent('experience-motion', { detail: { paused } }));
   if (paused) {
