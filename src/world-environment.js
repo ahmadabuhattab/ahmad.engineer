@@ -1,3 +1,5 @@
+import { createWorldLife } from './world-life.js';
+
 // The observatory is one owned scene layer: no assets, render loop, or globals.
 // Its landmarks share the camera targets used by the surrounding experience.
 export function createWorldEnvironment(THREE, scene) {
@@ -17,6 +19,9 @@ export function createWorldEnvironment(THREE, scene) {
     uCharge: { value: 0 },
     uImmersive: { value: 0 },
     uRealm: { value: new THREE.Vector3(1, 0, 0) },
+    uActivity: { value: new THREE.Vector3() },
+    uActivityProgress: { value: 0 },
+    uWarp: { value: 0 },
   };
   const clamp = value => Math.max(0, Math.min(1, Number.isFinite(value) ? value : 0));
   let seed = 82341;
@@ -53,6 +58,9 @@ export function createWorldEnvironment(THREE, scene) {
     uniform float uCharge;
     uniform float uImmersive;
     uniform vec3 uRealm;
+    uniform vec3 uActivity;
+    uniform float uActivityProgress;
+    uniform float uWarp;
     varying vec3 vWorld;
     float line(float coordinate, float width) {
       float distanceToLine = abs(fract(coordinate - .5) - .5);
@@ -88,6 +96,9 @@ export function createWorldEnvironment(THREE, scene) {
       float shock = exp(-pow((radius - energyRadius) / (.05 + uScatter * .10), 2.));
       float echo = exp(-pow((radius - energyRadius * .82) / .025, 2.));
       color += warm * (shock + echo * .35) * uScatter * 1.1;
+      float resonanceRadius = 2.8 + uActivityProgress * 20.;
+      float resonanceRing = exp(-pow((radius - resonanceRadius) / .075, 2.));
+      color += warm * resonanceRing * uActivity.x * 1.8;
       color += warm * exp(-radius * .24) * (uCharge * .075 + uScatter * .045);
       float sweep = pow(max(0., cos(azimuth - uTime * .075)), 80.);
       color += teal * sweep * exp(-abs(radius - 4.5) * .6) * .06;
@@ -99,6 +110,11 @@ export function createWorldEnvironment(THREE, scene) {
       float forgePath = 1. - smoothstep(.009, .031, segment(p, vec2(2.6, -1.5), vec2(6., -3.8)));
       color += vec3(.20, .60, .55) * (mindSignal + mindPath * .3) * (.28 + uRealm.y * .55);
       color += warm * (forgeSignal + forgePath * .3) * (.31 + uRealm.z * .55);
+      vec2 mindTravel = mix(vec2(-2.5, -1.2), vec2(-6.1, -3.1), fract(uTime * .13 + uActivityProgress * uActivity.y));
+      vec2 forgeTravel = mix(vec2(2.6, -1.5), vec2(6., -3.8), fract(uTime * .12 + uActivityProgress * uActivity.z));
+      color += vec3(.18, .7, .56) * exp(-length(p - mindTravel) * 9.) * (.14 + uActivity.y * 1.4);
+      color += warm * exp(-length(p - forgeTravel) * 9.) * (.13 + uActivity.z * 1.3);
+      color += teal * majorGrid * uWarp * .08;
       color += vec3(.014, .029, .024) * exp(-radius * .22) * (.5 + uImmersive * .5);
       gl_FragColor = vec4(color * distanceFade, edgeFade * .97);
       #include <tonemapping_fragment>
@@ -253,6 +269,7 @@ export function createWorldEnvironment(THREE, scene) {
     uniform float uTime;
     uniform float uScatter;
     uniform float uCharge;
+    uniform vec3 uActivity;
     varying vec2 vUv;
     void main() {
       vec2 p = (vUv - .5) * 2.;
@@ -264,7 +281,7 @@ export function createWorldEnvironment(THREE, scene) {
       float wisps = streaks * exp(-pow((r - .72) / .14, 2.));
       float center = exp(-dot(p * vec2(1.0, 1.4), p * vec2(1.0, 1.4)) * 3.7);
       vec3 color = vec3(.06, .19, .15) * (inner * .15 + wisps * .07 + center * .025);
-      color += vec3(.45, .63, .48) * edge * (.26 + uCharge * .3 + uScatter * .16);
+      color += vec3(.45, .63, .48) * edge * (.26 + uCharge * .3 + uScatter * .16 + uActivity.x * .45);
       gl_FragColor = vec4(color, min(1., edge * .6 + inner * .3 + wisps * .12 + center * .2));
       #include <tonemapping_fragment>
       #include <colorspace_fragment>
@@ -475,14 +492,16 @@ export function createWorldEnvironment(THREE, scene) {
     uniform float uTime;
     uniform float uCharge;
     uniform vec3 uRealm;
+    uniform vec3 uActivity;
+    uniform float uActivityProgress;
     varying vec2 vUv;
     void main() {
       float ends = smoothstep(0., .18, vUv.y) * (1. - smoothstep(.85, 1., vUv.y));
       float bars = pow(max(0., cos(vUv.x * 6.283185 * 12.)), 20.);
-      float scan = pow(max(0., sin(vUv.y * 26. - uTime * 1.4)), 18.);
+      float scan = pow(max(0., sin(vUv.y * 26. - uTime * 1.4 - uActivityProgress * uActivity.z * 22.)), 18.);
       float illumination = (.22 + bars * .5 + scan * .55) * ends;
-      vec3 color = vec3(.94, .42, .09) * (.40 + uRealm.z * .42 + uCharge * .15);
-      gl_FragColor = vec4(color, illumination * .48);
+      vec3 color = vec3(.94, .42, .09) * (.40 + uRealm.z * .42 + uCharge * .15 + uActivity.z * .95);
+      gl_FragColor = vec4(color, illumination * (.48 + uActivity.z * .35));
       #include <tonemapping_fragment>
       #include <colorspace_fragment>
     }
@@ -562,6 +581,8 @@ export function createWorldEnvironment(THREE, scene) {
   const skyMaterial = shader(`
     uniform float uTime;
     uniform float uImmersive;
+    uniform vec3 uActivity;
+    uniform float uWarp;
     varying vec2 vUv;
     float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
     float noise(vec2 p) {
@@ -571,13 +592,17 @@ export function createWorldEnvironment(THREE, scene) {
     void main() {
       vec2 p = vUv;
       float drift = uTime * .001;
-      float field = noise(p * 8. + drift) * .63 + noise(p * 19. - drift) * .27 + noise(p * 41.) * .10;
+      vec2 current = vec2(noise(p * 5. + drift), noise(p * 6. - drift + 17.));
+      float field = noise(p * 8. + current * 1.1 + drift) * .63 + noise(p * 19. + current * .8 - drift) * .27 + noise(p * 41.) * .10;
       float band = exp(-pow((p.y - .40 - p.x * .13 + field * .10) / .105, 2.));
+      float filament = pow(1. - abs(sin(field * 13. + p.x * 5. - p.y * 8.)), 12.) * band;
       float glow = exp(-dot((p - vec2(.51, .40)) * vec2(3.1, 4.5), (p - vec2(.51, .40)) * vec2(3.1, 4.5)));
       float edge = smoothstep(0., .13, p.x) * (1. - smoothstep(.84, 1., p.x))
         * smoothstep(0., .12, p.y) * (1. - smoothstep(.80, 1., p.y));
       vec3 color = vec3(.018, .061, .045) * (band * field + glow * .30);
       color += vec3(.035, .035, .018) * band * pow(field, 3.);
+      color += vec3(.015, .047, .031) * filament * (.34 + uWarp * .25);
+      color += vec3(.014, .030, .016) * glow * (uActivity.x * .4 + uActivity.y * .25 + uActivity.z * .2);
       gl_FragColor = vec4(color * (.70 + uImmersive * .30), edge * .77);
       #include <tonemapping_fragment>
       #include <colorspace_fragment>
@@ -633,10 +658,12 @@ export function createWorldEnvironment(THREE, scene) {
   }));
   world.add(new THREE.Points(starGeometry, starMaterial));
 
+  const life = createWorldLife(THREE, world, uniforms, { mind, nodes, edges, forge });
+
   let disposed = false;
   let previousTime = 0;
   const targetRealm = new THREE.Vector3();
-  function update({ time = 0, scatter = 0, charge = 0, realm = 'energy', immersive = false } = {}) {
+  function update({ time = 0, scatter = 0, charge = 0, realm = 'energy', immersive = false, activity = null, warp = 0 } = {}) {
     if (disposed) return;
     const clock = Number.isFinite(time) ? Math.max(0, time) : 0;
     const dt = Math.min(.1, Math.max(1 / 120, clock - previousTime));
@@ -645,6 +672,11 @@ export function createWorldEnvironment(THREE, scene) {
     uniforms.uTime.value = clock;
     uniforms.uScatter.value = clamp(scatter);
     uniforms.uCharge.value = clamp(charge);
+    const strength = clamp(activity?.strength);
+    uniforms.uActivity.value.set(activity?.kind === 'resonance' ? strength : 0,
+      activity?.kind === 'signal' ? strength : 0, activity?.kind === 'forge' ? strength : 0);
+    uniforms.uActivityProgress.value = clamp(activity?.progress);
+    uniforms.uWarp.value = clamp(warp);
     const immersion = typeof immersive === 'number' ? clamp(immersive) : immersive ? 1 : 0;
     uniforms.uImmersive.value += (immersion - uniforms.uImmersive.value) * ease;
     targetRealm.set(realm === 'energy' ? 1 : .18, realm === 'intelligence' ? 1 : .12, realm === 'industry' ? 1 : .12);
@@ -655,12 +687,13 @@ export function createWorldEnvironment(THREE, scene) {
     mindCore.rotation.y = -clock * .14;
     mindCage.rotation.y = clock * .06 + .35;
     mindLineMaterial.opacity = .24 + uniforms.uRealm.value.y * .24;
-    mindCoreMaterial.emissiveIntensity = .45 + uniforms.uRealm.value.y * .55;
-    forgeLineMaterial.opacity = .42 + uniforms.uRealm.value.z * .3;
-    forgeMetal.emissiveIntensity = .08 + uniforms.uRealm.value.z * .18;
-    portalMaterial.emissiveIntensity = .16 + uniforms.uCharge.value * .5 + uniforms.uScatter.value * .28;
-    portalMarkMaterial.opacity = .30 + uniforms.uCharge.value * .28;
-    trimMaterial.opacity = .48 + uniforms.uCharge.value * .2;
+    mindCoreMaterial.emissiveIntensity = .45 + uniforms.uRealm.value.y * .55 + uniforms.uActivity.value.y * 1.2;
+    forgeLineMaterial.opacity = .42 + uniforms.uRealm.value.z * .3 + uniforms.uActivity.value.z * .2;
+    forgeMetal.emissiveIntensity = .08 + uniforms.uRealm.value.z * .18 + uniforms.uActivity.value.z * .65;
+    portalMaterial.emissiveIntensity = .16 + uniforms.uCharge.value * .5 + uniforms.uScatter.value * .28 + uniforms.uActivity.value.x * .65;
+    portalMarkMaterial.opacity = .30 + uniforms.uCharge.value * .28 + uniforms.uActivity.value.x * .35;
+    trimMaterial.opacity = .48 + uniforms.uCharge.value * .2 + uniforms.uActivity.value.x * .15;
+    life.update(clock);
   }
 
   update();
@@ -669,6 +702,7 @@ export function createWorldEnvironment(THREE, scene) {
     dispose() {
       if (disposed) return;
       disposed = true;
+      life.dispose();
       world.traverse(object => { if (object.isInstancedMesh) object.dispose(); });
       world.removeFromParent();
       for (const resource of resources) resource.dispose();

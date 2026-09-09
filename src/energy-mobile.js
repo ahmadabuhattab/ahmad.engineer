@@ -106,6 +106,16 @@ function initializeMobileEnergy(host, canvas) {
   }
   const warmGlow = makeGlow([247, 207, 132]);
   const coolGlow = makeGlow([149, 228, 212]);
+  const furnaceGlow = makeGlow([255, 132, 49]);
+  const smokeSprite = document.createElement('canvas');
+  smokeSprite.width = smokeSprite.height = 64;
+  const smokePainter = smokeSprite.getContext('2d');
+  const smokeGradient = smokePainter.createRadialGradient(32, 32, 0, 32, 32, 32);
+  smokeGradient.addColorStop(0, 'rgba(121,133,130,.35)');
+  smokeGradient.addColorStop(0.45, 'rgba(72,94,96,.18)');
+  smokeGradient.addColorStop(1, 'rgba(49,77,82,0)');
+  smokePainter.fillStyle = smokeGradient;
+  smokePainter.fillRect(0, 0, 64, 64);
 
   // All districts share a real perspective camera. Realm navigation changes
   // its point of interest, rather than swapping one flat illustration for another.
@@ -123,6 +133,21 @@ function initializeMobileEnergy(host, canvas) {
   const orbit = { x: 0, y: 0, zoom: 0 };
   const orbitTarget = { ...orbit };
   const finiteClamp = (value, min, max) => Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : 0;
+  const activities = Object.fromEntries(['resonance', 'signal', 'forge'].map(kind => [
+    kind, { active: false, strength: 0, target: 0, time: 0 },
+  ]));
+  const flight = { active: false, progress: 0, duration: 3.4 };
+  const fraction = value => value - Math.floor(value);
+  function advanceActivities(delta) {
+    for (const activity of Object.values(activities)) {
+      activity.strength += (activity.target - activity.strength) * 0.14;
+      if (activity.active || activity.strength > 0.001) activity.time += delta;
+    }
+    if (flight.active) {
+      flight.progress = Math.min(1, flight.progress + delta / flight.duration);
+      if (flight.progress === 1) flight.active = false;
+    }
+  }
   function moveCamera(immediately = false) {
     const ease = immediately ? 1 : 0.12;
     for (const key of Object.keys(view)) view[key] += (viewTarget[key] - view[key]) * ease;
@@ -133,6 +158,14 @@ function initializeMobileEnergy(host, canvas) {
     x: random() * 1.4 - 0.7, y: random() * 1.4 - 0.8,
     depth: 9 + random() * 23, size: 0.4 + random() * 1.2,
     phase: random() * TAU,
+  }));
+  const dust = Array.from({ length: 52 }, () => ({
+    x: random() * 10 - 5, y: random() * 4.1 - 2.8, z: random() * 6 - 3.2,
+    phase: random() * TAU, size: 0.3 + random() * 0.9,
+  }));
+  const plume = Array.from({ length: 28 }, (_, index) => ({
+    chimney: index % 2, phase: random(), drift: random() * 2 - 1,
+    size: 0.08 + random() * 0.12, speed: 0.12 + random() * 0.1,
   }));
   const skyline = Array.from({ length: 22 }, (_, index) => ({
     x: (index - 10.5) * 0.72, z: -5.5 - random() * 3,
@@ -175,7 +208,12 @@ function initializeMobileEnergy(host, canvas) {
   function render() {
     const cycle = sampleCycle(elapsed + cycleOffset);
     cycle.spin += spinOffset;
-    const { scatter, charge, heat, shock } = cycle;
+    const { scatter, charge, shock } = cycle;
+    const resonance = activities.resonance.strength;
+    const signalStrength = activities.signal.strength;
+    const forge = activities.forge.strength;
+    const heat = Math.min(1, cycle.heat + resonance * 0.65);
+    const arrival = flight.active ? Math.sin(flight.progress * Math.PI) : 0;
     if (lastPhase !== cycle.phase) {
       lastPhase = cycle.phase;
       host.dataset.phase = cycle.phase;
@@ -224,7 +262,7 @@ function initializeMobileEnergy(host, canvas) {
     context.fillStyle = sky;
     context.fillRect(0, 0, width, height);
     const atmosphere = Math.max(width, height) * 0.85;
-    context.globalAlpha = 0.17;
+    context.globalAlpha = 0.17 + arrival * 0.1;
     context.drawImage(coolGlow, width * 0.36 - atmosphere, height * 0.28 - atmosphere, atmosphere * 2, atmosphere * 2);
     context.globalAlpha = 1;
 
@@ -239,6 +277,16 @@ function initializeMobileEnergy(host, canvas) {
       });
       if (point.x < 0 || point.x > width || point.y < 0 || point.y > height) continue;
       const alpha = 0.22 + (Math.sin(elapsed * 0.19 + star.phase) + 1) * 0.14;
+      if (arrival > 0.01) {
+        const dx = point.x - screenCenterX, dy = point.y - screenCenterY;
+        const stretch = arrival * (0.045 + 0.18 / distance);
+        context.beginPath();
+        context.moveTo(point.x - dx * stretch, point.y - dy * stretch);
+        context.lineTo(point.x, point.y);
+        context.strokeStyle = rgba(teal, alpha * arrival * 0.72);
+        context.lineWidth = star.size * 0.6;
+        context.stroke();
+      }
       context.fillStyle = rgba(star.phase > Math.PI ? teal : [242, 229, 200], alpha);
       context.fillRect(point.x, point.y, star.size, star.size);
       if (star.size > 1.5) {
@@ -320,7 +368,8 @@ function initializeMobileEnergy(host, canvas) {
           worldLine([
             { x: x - halfWidth * 0.72, y, z: z + halfDepth + 0.003 },
             { x: x + halfWidth * 0.72, y, z: z + halfDepth + 0.003 },
-          ], color, 0.45 + Math.sin(elapsed * 0.3 + level * 6 + x) * 0.11, 0.85, true, frontDepth + 0.002);
+          ], color, 0.45 + (color === bronze ? forge * 0.28 : signalStrength * 0.15)
+            + Math.sin(elapsed * 0.3 + level * 6 + x) * 0.11, 0.85, true, frontDepth + 0.002);
         }
       }
     }
@@ -380,6 +429,24 @@ function initializeMobileEnergy(host, canvas) {
       ], bronze, index % 3 === 0 ? 0.65 : 0.23, 0.7);
     }
 
+    // Resonance travels through the dais and forms standing waves in the air.
+    if (resonance > 0.002) {
+      for (let wave = 0; wave < 4; wave++) {
+        const progress = fraction(activities.resonance.time * 0.21 + wave / 4);
+        floorRing(0, 0, 0.28 + progress * 2.65, 1.41 - wave * 0.003,
+          wave % 2 ? teal : bronze, resonance * Math.sin(progress * Math.PI) * 0.48);
+      }
+      for (let wave = 0; wave < 3; wave++) {
+        const points = Array.from({ length: 49 }, (_, index) => {
+          const angle = index / 48 * TAU;
+          const radius = 0.68 + wave * 0.2 + Math.sin(angle * 6 - activities.resonance.time * 2.1) * 0.055 * resonance;
+          return rotate({ x: Math.cos(angle) * radius, y: Math.sin(angle) * radius, z: 0 },
+            wave * 0.73, wave * 0.62, activities.resonance.time * 0.06);
+        });
+        worldLine(points, wave === 1 ? teal : bronze, resonance * 0.38, 0.9, true);
+      }
+    }
+
     // Lit conduits join the three districts, with signals moving over the floor.
     for (const direction of [-1, 1]) {
       const color = direction < 0 ? teal : bronze;
@@ -408,20 +475,40 @@ function initializeMobileEnergy(host, canvas) {
     }
     const nodePositions = intelligenceNodes.map(node => {
       const turned = rotate(node, 0, elapsed * 0.115, 0);
-      return { x: -2.85 + turned.x, y: turned.y + 0.15, z: -0.55 + turned.z };
+      const spread = 1 + signalStrength * 0.09;
+      return { x: -2.85 + turned.x * spread, y: turned.y * spread + 0.15, z: -0.55 + turned.z * spread };
     });
     intelligenceLinks.forEach(([a, b], index) => {
-      const intensity = 0.18 + (Math.sin(elapsed * 0.7 - index * 0.3) + 1) * 0.075;
+      const intensity = 0.18 + signalStrength * 0.15 + (Math.sin(elapsed * 0.7 - index * 0.3) + 1) * 0.075;
       worldLine([nodePositions[a], nodePositions[b]], teal, intensity, 0.7, true);
+      if (signalStrength > 0.002 && index % 3 === 0) {
+        const start = nodePositions[a], end = nodePositions[b];
+        const progress = fraction(activities.signal.time * 0.56 + index * 0.618);
+        const along = t => ({
+          x: start.x + (end.x - start.x) * t,
+          y: start.y + (end.y - start.y) * t,
+          z: start.z + (end.z - start.z) * t,
+        });
+        const head = project(along(progress));
+        worldLine([along(Math.max(0, progress - 0.17)), along(progress)], [177, 255, 243], signalStrength * 0.86, 1.25, true);
+        paintQueue.push({ z: head.z + 0.001, paint() {
+          const size = Math.max(5, unit * 0.09 * head.scale);
+          context.globalAlpha = signalStrength * 0.88;
+          context.drawImage(coolGlow, head.x - size, head.y - size, size * 2, size * 2);
+          context.fillStyle = '#d7fff7';
+          context.fillRect(head.x - 1, head.y - 1, 2, 2);
+          context.globalAlpha = 1;
+        } });
+      }
     });
     for (let index = 0; index < nodePositions.length; index++) {
       const point = project(nodePositions[index]);
-      const size = Math.max(1.2, unit * 0.019 * point.scale);
+      const size = Math.max(1.2, unit * 0.019 * point.scale) * (1 + signalStrength * 0.24);
       paintQueue.push({
         z: point.z,
         paint() {
           const glow = size * 5;
-          context.globalAlpha = 0.65;
+          context.globalAlpha = 0.65 + signalStrength * 0.25;
           context.drawImage(coolGlow, point.x - glow, point.y - glow, glow * 2, glow * 2);
           context.globalAlpha = 1;
           context.fillStyle = '#bff9ed';
@@ -439,7 +526,7 @@ function initializeMobileEnergy(host, canvas) {
     });
     for (let index = 2; index < 6; index++) {
       const next = index === 5 ? 2 : index + 1;
-      worldFace([crystal[0], crystal[index], crystal[next]], [53, 108, 109], teal, 0.68, 0.72);
+      worldFace([crystal[0], crystal[index], crystal[next]], [53, 108 + signalStrength * 47, 109 + signalStrength * 41], teal, 0.68, 0.72);
       worldFace([crystal[1], crystal[next], crystal[index]], [16, 44, 51], teal, 0.9, 0.5);
     }
 
@@ -465,6 +552,122 @@ function initializeMobileEnergy(host, canvas) {
       { x: 2.25, y: 0.85, z: -0.9 }, { x: 2.25, y: 0.25, z: -0.9 },
       { x: 3.36, y: 0.25, z: -0.9 }, { x: 3.36, y: 0.8, z: -0.9 },
     ], bronze, 0.57, 1.2, true);
+
+    // The foundry has a physical furnace, a working belt and buoyant exhaust.
+    const ember = [255, 153, 67];
+    worldFace([
+      { x: 2.1, y: 1.26, z: 0.32 }, { x: 3.65, y: 1.26, z: 0.32 },
+      { x: 3.65, y: 1.26, z: 0.57 }, { x: 2.1, y: 1.26, z: 0.57 },
+    ], [19, 28, 28], bronze, 1, 0.65);
+    worldFace([
+      { x: 2.1, y: 1.26, z: 0.57 }, { x: 3.65, y: 1.26, z: 0.57 },
+      { x: 3.65, y: 1.37, z: 0.57 }, { x: 2.1, y: 1.37, z: 0.57 },
+    ], [26, 31, 28], bronze, 1, 0.45);
+    for (let roller = 0; roller < 12; roller++) {
+      const x = 2.14 + roller * 0.13;
+      worldLine([{ x, y: 1.255, z: 0.34 }, { x, y: 1.255, z: 0.55 }], bronze, 0.33, 0.7, true);
+    }
+    for (const x of [2.18, 2.86, 3.57]) {
+      worldLine([{ x, y: 1.35, z: 0.53 }, { x, y: 1.51, z: 0.53 }], bronze, 0.65, 1.5, true);
+    }
+    for (let ingot = 0; ingot < 5; ingot++) {
+      const progress = fraction(ingot / 5 + activities.forge.time * 0.15);
+      const x = 2.17 + progress * 1.35;
+      const hot = forge * (1 - progress * 0.65);
+      const color = [61 + hot * 181, 55 + hot * 87, 36 + hot * 17];
+      worldFace([
+        { x, y: 1.18, z: 0.39 }, { x: x + 0.12, y: 1.18, z: 0.39 },
+        { x: x + 0.12, y: 1.18, z: 0.51 }, { x, y: 1.18, z: 0.51 },
+      ], color, bronze, 1, 0.7);
+      worldFace([
+        { x, y: 1.18, z: 0.51 }, { x: x + 0.12, y: 1.18, z: 0.51 },
+        { x: x + 0.12, y: 1.25, z: 0.51 }, { x, y: 1.25, z: 0.51 },
+      ], color, bronze, 1, 0.4);
+    }
+    const furnace = [
+      { x: 2.24, y: 1.25, z: 0.295 }, { x: 2.24, y: 0.84, z: 0.295 },
+      { x: 2.33, y: 0.74, z: 0.295 }, { x: 2.67, y: 0.74, z: 0.295 },
+      { x: 2.76, y: 0.84, z: 0.295 }, { x: 2.76, y: 1.25, z: 0.295 },
+    ];
+    worldFace(furnace, [31, 31, 26], bronze, 1, 0.75);
+    const mouth = [
+      { x: 2.32, y: 1.22, z: 0.3 }, { x: 2.32, y: 0.92, z: 0.3 },
+      { x: 2.39, y: 0.85, z: 0.3 }, { x: 2.61, y: 0.85, z: 0.3 },
+      { x: 2.68, y: 0.92, z: 0.3 }, { x: 2.68, y: 1.22, z: 0.3 },
+    ];
+    const furnaceDepth = furnace.map(project).reduce((sum, point) => sum + point.z, 0) / furnace.length;
+    // The inset follows its facade's paint depth, even when looking down at it.
+    paintQueue.push({ z: furnaceDepth + 0.002, paint() {
+      path(mouth.map(project), true);
+      context.fillStyle = rgba([24 + forge * 192, 20 + forge * 82, 14 + forge * 19], 1);
+      context.fill();
+      context.strokeStyle = rgba(ember, 0.28 + forge * 0.65);
+      context.lineWidth = 0.8;
+      context.stroke();
+      if (forge > 0.002) {
+        const point = project({ x: 2.5, y: 1.065, z: 0.31 });
+        const size = unit * point.scale * 0.4;
+        context.globalAlpha = forge * 0.68;
+        context.drawImage(furnaceGlow, point.x - size, point.y - size, size * 2, size * 2);
+        context.globalAlpha = 1;
+      }
+    } });
+    if (forge > 0.002) {
+      for (const particle of plume) {
+        const chimney = industryTowers[particle.chimney ? 4 : 1];
+        const age = fraction(activities.forge.time * particle.speed + particle.phase);
+        const rise = age * (1.05 + forge * 0.5);
+        const point = project({
+          x: 2.8 + chimney.x + particle.drift * rise * 0.26 + Math.sin(age * 5 + particle.phase * TAU) * rise * 0.08,
+          y: 1.5 - chimney.height - 0.12 - rise,
+          z: -0.6 + chimney.z + age * 0.15,
+        });
+        const opacity = forge * Math.sin(age * Math.PI);
+        const size = Math.max(4, unit * point.scale * particle.size * (0.5 + age * 2.4));
+        paintQueue.push({ z: point.z, paint() {
+          context.globalAlpha = opacity * 0.88;
+          context.drawImage(smokeSprite, point.x - size, point.y - size, size * 2, size * 2);
+          if (particle.phase > 0.6) {
+            const glow = size * (0.12 + (1 - age) * 0.13);
+            context.globalAlpha = opacity * (1 - age) * 0.85;
+            context.drawImage(furnaceGlow, point.x - glow, point.y - glow, glow * 2, glow * 2);
+          }
+          context.globalAlpha = 1;
+        } });
+      }
+    }
+
+    // Foreground motes provide depth without adding another full-screen layer.
+    for (const particle of dust) {
+      const point = project({
+        x: particle.x + Math.sin(elapsed * 0.08 + particle.phase) * 0.16,
+        y: particle.y + Math.sin(elapsed * 0.06 + particle.phase * 2) * 0.11,
+        z: particle.z,
+      });
+      if (point.x < -15 || point.x > width + 15 || point.y < -15 || point.y > height + 15) continue;
+      paintQueue.push({ z: point.z, paint() {
+        const opacity = 0.045 + (Math.sin(elapsed * 0.24 + particle.phase) + 1) * 0.028 + arrival * 0.12;
+        const size = Math.min(2.5, particle.size * point.scale);
+        context.globalAlpha = opacity;
+        if (particle.size > 1) {
+          const glow = size * 5;
+          context.drawImage(particle.phase > Math.PI ? warmGlow : coolGlow,
+            point.x - glow, point.y - glow, glow * 2, glow * 2);
+        }
+        context.fillStyle = '#d1e4d8';
+        context.fillRect(point.x, point.y, size, size);
+        if (arrival > 0.01) {
+          context.beginPath();
+          context.moveTo(point.x, point.y);
+          context.lineTo(point.x - (point.x - screenCenterX) * arrival * 0.08,
+            point.y - (point.y - screenCenterY) * arrival * 0.08);
+          context.strokeStyle = '#9bdad0';
+          context.lineWidth = size * 0.5;
+          context.stroke();
+        }
+        context.globalAlpha = 1;
+      } });
+    }
 
     // Soft volumetric aura is deliberately slow and never strobes.
     const haloSize = unit * origin.scale * (1.65 + charge * 0.2 + scatter * 0.72);
@@ -670,8 +873,10 @@ function initializeMobileEnergy(host, canvas) {
     // Retain fractional frame time; never speed up after returning to the page.
     if (delta >= 1000 / 30) {
       const remainder = delta % (1000 / 30);
-      elapsed += Math.min((delta - remainder) / 1000, 0.075);
+      const step = Math.min((delta - remainder) / 1000, 0.075);
+      elapsed += step;
       previous = now - remainder;
+      advanceActivities(step);
       moveCamera();
       render();
     }
@@ -725,6 +930,33 @@ function initializeMobileEnergy(host, canvas) {
     render();
     updatePlayback();
   }
+  function onWorldActivity(event) {
+    if (disposed || !Object.hasOwn(activities, event.detail?.kind)) return;
+    const activity = activities[event.detail.kind];
+    const active = event.detail.active === true;
+    if (active && !activity.active) activity.time = 0;
+    activity.active = active;
+    activity.target = active ? finiteClamp(event.detail.strength, 0, 1) : 0;
+    // A manual input produces a complete still frame when motion is paused.
+    if (!canAnimate()) activity.strength = activity.target;
+    render();
+    updatePlayback();
+  }
+  function onWorldFlight(event) {
+    if (disposed) return;
+    flight.active = event.detail?.active === true;
+    flight.progress = finiteClamp(event.detail?.progress, 0, 1);
+    if (Number.isFinite(event.detail?.duration)) flight.duration = finiteClamp(event.detail.duration, 0.2, 30);
+    render();
+    updatePlayback();
+  }
+  function onWorldCapture() {
+    if (disposed || !worldActive) return;
+    render();
+    canvas.toBlob(blob => {
+      if (!disposed && blob) document.dispatchEvent(new CustomEvent('world-capture-ready', { detail: { blob } }));
+    }, 'image/png');
+  }
   function onPageHide(event) {
     stop();
     if (!event.persisted) dispose();
@@ -743,6 +975,9 @@ function initializeMobileEnergy(host, canvas) {
     document.removeEventListener('energy-burst', onBurst);
     document.removeEventListener('world-view', onWorldView);
     document.removeEventListener('world-orbit', onWorldOrbit);
+    document.removeEventListener('world-activity', onWorldActivity);
+    document.removeEventListener('world-flight', onWorldFlight);
+    document.removeEventListener('world-capture', onWorldCapture);
     motion.removeEventListener('change', updatePlayback);
     window.removeEventListener('pagehide', onPageHide);
     window.removeEventListener('pageshow', onPageShow);
@@ -760,6 +995,9 @@ function initializeMobileEnergy(host, canvas) {
   document.addEventListener('energy-burst', onBurst);
   document.addEventListener('world-view', onWorldView);
   document.addEventListener('world-orbit', onWorldOrbit);
+  document.addEventListener('world-activity', onWorldActivity);
+  document.addEventListener('world-flight', onWorldFlight);
+  document.addEventListener('world-capture', onWorldCapture);
   motion.addEventListener('change', updatePlayback);
   window.addEventListener('pagehide', onPageHide);
   window.addEventListener('pageshow', onPageShow);
