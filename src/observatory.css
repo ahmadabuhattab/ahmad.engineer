@@ -1,0 +1,158 @@
+/* The observatory extends the portfolio's visual world; document content stays in normal flow. */
+@media screen {
+  .hero { background:#060e10; isolation:isolate; }
+  .hero .hero-visual { position:absolute; inset:0; width:100%; height:100%; min-height:0; margin:0; overflow:hidden; z-index:0; contain:paint; }
+  .hero .hero-visual:after { content:''; position:absolute; inset:0; background:linear-gradient(90deg,#060e10f5 0%,#060e10b8 31%,#060e1012 62%),linear-gradient(0deg,#060e10 0%,transparent 17%,transparent 80%,#060e1055); pointer-events:none; }
+  .hero .hero-copy,.hero .hero-topline,.hero .hero-bottom { z-index:2; }
+  .hero-copy { padding-block:42px 24px; }
+  .hero-name { color:#c8ddcb; }
+  .hero-headline { font-size:clamp(78px,7vw,116px); }
+  .hero-copy p { color:#b2c2bd; }
+  .hero .hero-bottom { z-index:3; }
+  .hero .orbit-index { top:24%; right:7%; color:#b2c9bd; font-size:8px; }
+  .hero .energy-controls { bottom:16%; right:6%; }
+  .hero .energy-scene:before { inset:0; border-radius:0; background:radial-gradient(ellipse at 74% 55%,#327a5c2a,transparent 55%); }
+  .hero .energy-poster { width:100%; left:0; object-fit:cover; }
+  .energy-poster-picture~.energy-fallback { display:none; }
+  .energy-poster-picture .energy-poster { animation:none!important; mix-blend-mode:normal; }
+  .world-enter { display:inline-flex; align-items:center; justify-content:space-between; gap:24px; min-height:54px; padding:17px 22px; border:1px solid #e6d3a185; background:linear-gradient(115deg,#e7dec3,#c4bd94); color:#14211d; font:500 11px 'Inter',sans-serif; letter-spacing:.025em; transition:box-shadow .3s,transform .3s; pointer-events:auto; }
+  .world-enter span { font-size:17px; }
+  .world-enter:hover { box-shadow:0 0 40px #e3c98826; transform:translateY(-2px); }
+  .world-enter[hidden] { display:none; }
+  .world-available .hero-actions>.button-primary { background:none; color:#dce3d6; padding:10px 0; min-height:44px; border-bottom:1px solid #aabbb84d; gap:14px; font-size:11px; }
+  .world-available .hero-actions>.text-link { display:none; }
+  .hero-world-note { display:flex; gap:9px; align-items:center; margin-top:20px; font-size:8px; text-transform:uppercase; letter-spacing:.12em; color:#8faea1; }
+  .hero-world-note:before { content:''; width:4px; height:4px; border-radius:50%; background:#b7e7c9; box-shadow:0 0 12px #b7e7c9; }
+  .observatory-portals { display:none; }
+  .world-available .observatory-portals { display:grid; grid-template-columns:1.25fr repeat(3,1fr); align-items:stretch; border-bottom:1px solid #bfdbc32b; background:#091310; padding:42px var(--space); gap:30px; }
+  .portal-intro { display:flex; flex-direction:column; justify-content:center; padding-right:20px; }
+  .portal-intro .micro { font-size:8px; color:#9bb7a8; margin-bottom:12px; }
+  .portal-intro h2 { font:400 29px/1.15 'Instrument Serif',Georgia,serif; color:#e4ddc9; }
+  .portal-destination { position:relative; border:0; border-left:1px solid #adceb52b; background:none; padding:18px 22px; text-align:left; min-width:0; color:#e6e7d7; transition:background .35s,transform .35s; overflow:hidden; }
+  .portal-destination:hover { background:#d8e6cb08; transform:translateY(-4px); }
+  .portal-destination .micro { color:#93b7a6; font-size:8px; display:block; margin-bottom:24px; }
+  .portal-destination strong { font:400 25px 'Instrument Serif',Georgia,serif; display:block; margin-bottom:8px; }
+  .portal-destination small { font:300 10px/1.7 'Inter',sans-serif; color:#9caea3; display:block; max-width:150px; }
+  .portal-destination .portal-arrow { position:absolute; right:12px; top:15px; color:#d9cf9b; font-size:19px; }
+  .portal-glyph { position:absolute; right:-10px; bottom:-26px; width:110px; height:110px; border:1px solid #bcd0b519; border-radius:50%; transform:rotateX(60deg) rotateZ(-35deg); box-shadow:0 0 0 18px #bcd0b507,0 0 0 36px #bcd0b504; transition:transform .7s; pointer-events:none; }
+  .portal-destination:hover .portal-glyph { transform:rotateX(30deg) rotateZ(55deg); }
+
+  .world-is-open { overflow:hidden!important; }
+  .world-dialog { position:fixed; inset:0; width:100%; max-width:none; height:100dvh; max-height:none; margin:0; border:0; padding:0; color:#eee9da; background:#061012; overflow:hidden; }
+  .world-dialog::backdrop { background:#061012; }
+  .world-dialog:not([open]) { display:none; }
+  .world-stage { position:absolute; inset:0; }
+  .world-dialog .hero-visual { position:absolute!important; inset:0!important; width:100%!important; height:100%!important; min-height:0!important; margin:0!important; overflow:hidden; }
+  .world-dialog .hero-visual:after { display:none; }
+  .world-dialog .energy-scene { height:100%; min-height:0; }
+  .world-dialog .energy-poster { object-fit:contain; }
+  .world-dialog .orbit-index { display:none; }
+  .world-dialog .energy-controls { bottom:135px; right:40px; z-index:4; }
+  .world-dialog:is([data-realm=intelligence],[data-realm=industry]) .energy-controls { display:none; }
+  .world-dialog #energyCanvas { touch-action:none; cursor:grab; }
+  .world-dialog #energyCanvas:active { cursor:grabbing; }
+  .world-topbar { position:absolute; z-index:4; top:0; left:0; right:0; display:flex; justify-content:space-between; align-items:center; gap:20px; padding:25px 40px; background:linear-gradient(#061012d9,transparent); pointer-events:none; }
+  .world-signature { font-size:10px; letter-spacing:.16em; line-height:1.8; color:#c1d3c6; }
+  .world-signature span { color:#7d9c8e; display:block; font-size:8px; }
+  .world-top-actions { display:flex; gap:12px; pointer-events:auto; }
+  .world-ui-button { border:1px solid #b8d3bb45; background:#081311c9; color:#d8e2d6; min-height:44px; min-width:44px; padding:0 14px; font:400 10px 'Inter',sans-serif; backdrop-filter:blur(12px); }
+  .world-ui-button:hover { background:#284135; border-color:#bbccaa88; }
+  .world-close { font-size:12px; }
+  .world-close span { margin-left:18px; font-size:20px; vertical-align:middle; }
+  .world-info { position:absolute; z-index:3; bottom:154px; left:40px; width:min(340px,42vw); padding:24px; border-left:1px solid #bfd0a568; background:linear-gradient(90deg,#071210eb,#07121083); backdrop-filter:blur(8px); pointer-events:none; }
+  .world-info .micro { font-size:8px; color:#b4c9aa; }
+  .world-info h2 { font:400 38px/1.04 'Instrument Serif',Georgia,serif; margin:16px 0; letter-spacing:-.025em; }
+  .world-info p { font-size:13px; line-height:1.8; color:#bccac0; margin-bottom:18px; }
+  .world-info a { display:inline-block; font-size:12px; color:#e5d5a8; min-height:36px; padding-block:9px; border-bottom:1px solid #baa77f66; pointer-events:auto; }
+  .world-destinations { position:absolute; z-index:4; bottom:34px; left:40px; right:40px; display:grid; grid-template-columns:repeat(4,1fr); border:1px solid #aec8b638; background:#071310d9; backdrop-filter:blur(16px); }
+  .world-destinations button { min-width:0; min-height:70px; border:0; border-right:1px solid #aec8b629; background:none; color:#9cafa2; text-align:left; padding:12px 22px; font:400 12px 'Inter',sans-serif; transition:background .3s,color .3s; }
+  .world-destinations button:last-child { border-right:0; }
+  .world-destinations button span { display:block; font-size:8px; letter-spacing:.12em; margin-bottom:7px; color:#8cac98; }
+  .world-destinations button[aria-pressed=true] { color:#f3e7c2; background:#b2bf9d14; box-shadow:inset 0 -2px #d6c58e; }
+  .world-destinations button:hover { color:#f3e7c2; background:#b2bf9d0b; }
+  .world-camera-tools { position:absolute; z-index:4; right:40px; top:50%; transform:translateY(-50%); display:flex; flex-direction:column; gap:7px; }
+  .world-camera-tools button { font-size:17px; padding:0; }
+  .world-hint { position:absolute; z-index:3; left:50%; top:40px; transform:translateX(-50%); color:#90aa9d; font-size:8px; letter-spacing:.09em; pointer-events:none; }
+  .world-dialog :is(button,a):focus-visible { outline:2px solid #e9d29e; outline-offset:4px; }
+  .world-ui-button:disabled { opacity:.4; cursor:wait; }
+  .world-dialog[data-render=fallback] .world-camera-tools { display:none; }
+  .world-dialog.world-compact { display:grid; grid-template-areas:'top' 'stage' 'camera' 'info' 'destinations'; grid-template-rows:auto 260px auto auto auto; overflow-y:auto; align-content:start; }
+  .world-compact .world-topbar { grid-area:top; position:relative; flex-wrap:wrap; padding:14px 18px; }
+  .world-compact .world-signature { max-width:100%; overflow-wrap:anywhere; }
+  .world-compact .world-top-actions { flex-wrap:wrap; max-width:100%; }
+  .world-compact .world-stage { grid-area:stage; position:relative; inset:auto; height:260px; }
+  .world-compact .world-camera-tools { grid-area:camera; position:relative; inset:auto; transform:none; flex-direction:row; justify-content:center; flex-wrap:wrap; gap:8px; padding:16px 18px; }
+  .world-compact .world-camera-tools button { min-height:44px; min-width:44px; }
+  .world-compact .world-info { grid-area:info; position:relative; inset:auto; width:auto; max-width:none; margin:0 18px 20px; padding:18px; overflow-wrap:anywhere; }
+  .world-compact .world-info p { display:block; }
+  .world-compact .world-destinations { grid-area:destinations; position:relative; inset:auto; grid-template-columns:repeat(2,minmax(0,1fr)); margin:0 18px 18px; }
+  .world-compact .world-destinations button { overflow-wrap:anywhere; min-height:64px; padding:12px; }
+  .world-dialog.world-compact .energy-controls { bottom:12px; right:18px; }
+  .world-compact .energy-status,.world-compact .world-hint { display:none; }
+  @media(max-width:1100px) {
+    .hero-headline { font-size:clamp(72px,7.8vw,90px); }
+    .world-available .observatory-portals { gap:12px; padding-block:30px; }
+    .portal-destination { padding-inline:16px; }
+    .portal-intro h2 { font-size:25px; }
+    .world-hint { display:none; }
+  }
+  @media(max-width:760px) {
+    .hero .hero-copy { padding-block:0; }
+    .hero-headline { font-size:clamp(47px,13.5vw,72px); }
+    .hero .hero-visual { position:relative; inset:auto; width:calc(100% + 2 * var(--space)); height:390px; margin-inline:calc(-1 * var(--space)); flex-shrink:0; }
+    .hero .hero-visual:after { background:linear-gradient(0deg,#060e10,transparent 18%,transparent 86%,#060e10); }
+    .hero .energy-poster { width:100%; left:0; object-fit:contain; }
+    .hero .orbit-index { top:8%; right:7%; }
+    .hero .energy-controls { bottom:10px; right:var(--space); }
+    .hero .hero-actions { gap:18px; }
+    .world-enter { font-size:10px; padding:14px 16px; gap:17px; min-height:49px; }
+    .world-available .hero-actions>.button-primary { font-size:10px; }
+    .hero-world-note { font-size:7px; margin-top:17px; }
+    .world-available .observatory-portals { grid-template-columns:repeat(3,minmax(0,1fr)); gap:0; padding:28px var(--space); }
+    .portal-intro { grid-column:1/-1; margin-bottom:22px; padding:0; }
+    .portal-intro h2 { font-size:28px; }
+    .portal-destination { padding:12px 10px; }
+    .portal-destination strong { font-size:20px; }
+    .portal-destination small { font-size:8px; }
+    .portal-destination .micro { font-size:7px; margin-bottom:18px; }
+    .portal-destination .portal-arrow { display:none; }
+    .world-topbar { padding:16px 18px; gap:8px; }
+    .world-signature { font-size:8px; letter-spacing:.1em; }
+    .world-top-actions { gap:6px; }
+    .world-ui-button { padding-inline:10px; font-size:11px; }
+    .world-close span { margin-left:6px; }
+    .world-info { left:18px; bottom:138px; width:calc(100% - 84px); max-width:340px; padding:14px 16px; }
+    .world-info h2 { font-size:28px; margin-block:10px; }
+    .world-info p { font-size:12px; line-height:1.6; margin-bottom:7px; }
+    .world-info a { font-size:11px; }
+    .world-destinations { left:18px; right:18px; bottom:18px; }
+    .world-destinations button { padding:10px 8px; min-height:64px; font-size:11px; }
+    .world-destinations button span { font-size:7px; }
+    .world-dialog .energy-controls { bottom:90px; right:18px; }
+    .world-dialog .energy-status { max-width:none; }
+    .world-camera-tools { right:18px; top:38%; gap:5px; }
+    .world-camera-tools button { font-size:17px; }
+  }
+  @media(max-height:600px) {
+    .world-topbar { padding:12px 18px; }
+    .world-signature span { display:none; }
+    .world-info { left:18px; bottom:106px; width:min(320px,calc(100% - 100px)); padding:14px; }
+    .world-info h2 { font-size:26px; margin-block:8px; }
+    .world-info p { display:none; }
+    .world-destinations { bottom:12px; left:18px; right:18px; }
+    .world-destinations button { min-height:54px; padding-block:8px; }
+    .world-dialog .energy-controls { bottom:80px; right:18px; }
+    .world-camera-tools { right:18px; top:47%; gap:4px; }
+    .world-camera-tools button { min-height:36px; min-width:36px; }
+    .world-hint { display:none; }
+  }
+  @media(min-width:761px) and (max-height:800px) {
+    .hero { min-height:max(520px,calc(100svh - 100px)); padding-top:60px; padding-bottom:85px; }
+    .hero .hero-copy { padding-block:0; }
+    .hero-name { margin-bottom:18px; }
+    .hero-headline { font-size:clamp(52px,8.8vh,72px); }
+    .hero-copy p { font-size:13px; line-height:1.8; margin-top:18px; max-width:360px; }
+    .hero-actions { margin-top:18px; }
+    .hero-world-note { margin-top:12px; }
+  }
+}
