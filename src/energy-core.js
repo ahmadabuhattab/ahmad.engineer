@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { sampleCycle, CYCLE_DURATION, BURST_START } from './energy-cycle.js';
 import { createWorldEnvironment } from './world-environment.js';
+import { createWorldCinematic } from './world-cinematic.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import './energy-core.css';
 
 // A small, self-contained armillary: real geometry, a luminous nucleus, no
@@ -26,7 +28,7 @@ function initializeArmillary(host, canvas) {
     return;
   }
 
-  renderer.setClearColor(0x000000, 0);
+  renderer.setClearColor(0x030a0e, 1);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, smallScreen.matches ? 1.25 : 1.6));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -52,7 +54,23 @@ function initializeArmillary(host, canvas) {
   const heartLight = new THREE.PointLight(0xffbf73, 13, 9, 2);
   heartLight.position.set(0, 0, 0.45);
   scene.add(heartLight);
+  // A locally generated reflection environment gives metals readable faces
+  // and edges. No HDR image or external texture has to be downloaded.
+  let reflections;
+  function regenerateReflections() {
+    if (reflections) { resources.delete(reflections); reflections.dispose(); }
+    const room = new RoomEnvironment();
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    reflections = retain(pmrem.fromScene(room, .04));
+    scene.environment = reflections.texture;
+    room.dispose();
+    pmrem.dispose();
+  }
+  regenerateReflections();
+  scene.environmentIntensity = .38;
+  scene.environmentRotation.y = .65;
   const world = createWorldEnvironment(THREE, scene);
+  const cinematic = createWorldCinematic(renderer, scene, camera, smallScreen.matches);
 
   const glowTexture = retain(makeGlowTexture());
   function glow(color, scale, opacity = 0.4) {
@@ -374,6 +392,19 @@ function initializeArmillary(host, canvas) {
   let lastPhase = '';
   let immersive = host.dataset.world === 'true';
   let realm = host.dataset.realm || 'overview';
+  const activity = { kind: null, strength: 0, progress: 0 };
+  let activityTarget = 0;
+  let activityStarted = 0;
+  let flightStarted = host.dataset.flight === 'true' ? 0 : -100;
+  let flightDuration = 3.4;
+  let warp = 0;
+  let framesMeasured = 0, renderCost = 0;
+  const flightPosition = new THREE.Vector3();
+  const flightLook = new THREE.Vector3();
+  const entryCurve = new THREE.CubicBezierCurve3(
+    new THREE.Vector3(0, 1.35, -19), new THREE.Vector3(0, 1.35, -1),
+    new THREE.Vector3(1, 3.8, 9), new THREE.Vector3(12, 7, 19),
+  );
   const orbit = { x: 0, y: 0, zoom: 0 };
   const cameraTarget = new THREE.Vector3(-3, -.6, 0);
   const desiredPosition = new THREE.Vector3();
@@ -386,6 +417,43 @@ function initializeArmillary(host, canvas) {
     intelligence: { position: [-5, 2.5, 5], target: [-8, 0, -4] },
     industry: { position: [12, 3.2, 5], target: [8, 0, -5] },
   };
+  const raycaster = new THREE.Raycaster();
+  const hitPoint = new THREE.Vector3();
+  const hitPointer = new THREE.Vector2();
+  const landmarks = [
+    { realm: 'energy', sphere: new THREE.Sphere(new THREE.Vector3(0, 0, 0), 2.8) },
+    { realm: 'intelligence', sphere: new THREE.Sphere(new THREE.Vector3(-8, 0, -4), 2.4) },
+    { realm: 'industry', sphere: new THREE.Sphere(new THREE.Vector3(8, -.2, -5), 2.5) },
+  ];
+  let tapStart = null;
+  function pickLandmark(event) {
+    const box = canvas.getBoundingClientRect();
+    hitPointer.set((event.clientX - box.left) / box.width * 2 - 1, 1 - (event.clientY - box.top) / box.height * 2);
+    raycaster.setFromCamera(hitPointer, camera);
+    let nearest = null, distance = Infinity;
+    for (const landmark of landmarks) {
+      if (raycaster.ray.intersectSphere(landmark.sphere, hitPoint)) {
+        const next = hitPoint.distanceToSquared(camera.position);
+        if (next < distance) { distance = next; nearest = landmark.realm; }
+      }
+    }
+    return nearest;
+  }
+  function onSceneDown(event) {
+    tapStart = immersive && event.isPrimary && event.button === 0 ? { id: event.pointerId, x: event.clientX, y: event.clientY, dragged: false } : null;
+  }
+  function onSceneMove(event) {
+    if (tapStart?.id === event.pointerId && Math.hypot(event.clientX - tapStart.x, event.clientY - tapStart.y) > 7) tapStart.dragged = true;
+    if (immersive && !event.buttons) canvas.style.cursor = pickLandmark(event) ? 'pointer' : 'grab';
+  }
+  function onSceneUp(event) {
+    if (immersive && tapStart?.id === event.pointerId && !tapStart.dragged) {
+      const selected = pickLandmark(event);
+      if (selected) document.dispatchEvent(new CustomEvent('world-select', { detail: { realm: selected } }));
+    }
+    tapStart = null;
+  }
+  function cancelSceneTap() { tapStart = null; }
 
   function updateCamera(scatter, charge) {
     if (immersive) {
@@ -393,11 +461,12 @@ function initializeArmillary(host, canvas) {
       desiredTarget.fromArray(view.target);
       viewOffset.fromArray(view.position).sub(desiredTarget);
       viewSphere.setFromVector3(viewOffset);
-      viewSphere.theta += orbit.x * 1.35;
+      viewSphere.theta += orbit.x * 1.35 + (host.dataset.touring === 'true' ? Math.sin(elapsed * .16) * .12 : 0);
       viewSphere.phi = THREE.MathUtils.clamp(viewSphere.phi + orbit.y * .55, .38, 1.49);
-      viewSphere.radius *= (1 - orbit.zoom * .38) * Math.max(1, Math.min(1.9, .9 / camera.aspect));
+      viewSphere.radius *= (1 - orbit.zoom * .38) * Math.max(1, Math.min(1.4, .75 / camera.aspect));
       if (realm === 'energy') viewSphere.radius += scatter * 1.2;
       desiredPosition.setFromSpherical(viewSphere).add(desiredTarget);
+      if (camera.aspect < .9) { desiredTarget.y -= .85; desiredPosition.y -= .3; }
     } else if (smallScreen.matches) {
       desiredTarget.set(0, -.5, -1);
       desiredPosition.set(.6, 2.6, Math.max(13, 12 / camera.aspect) + scatter * 1.5);
@@ -406,9 +475,22 @@ function initializeArmillary(host, canvas) {
       const arrival = isPaused ? 0 : Math.pow(Math.max(0, 1 - elapsed / 3.2), 3);
       desiredPosition.set(.7 + easedX * .35, 2.5 + arrival * 2, 14 + arrival * 7 + scatter * 1.1 + charge * .15);
     }
+    const journey = (elapsed - flightStarted) / flightDuration;
+    warp = immersive && journey >= 0 && journey < 1 && !isPaused ? Math.sin(journey * Math.PI) : 0;
+    if (warp > 0) {
+      const progress = THREE.MathUtils.smootherstep(journey, 0, 1);
+      entryCurve.v3.copy(desiredPosition);
+      entryCurve.getPoint(progress, flightPosition);
+      flightLook.set(0, 1.1, 7).lerp(desiredTarget, THREE.MathUtils.smoothstep(journey, .2, 1));
+      camera.position.copy(flightPosition);
+      cameraTarget.copy(flightLook);
+    } else {
     // Direct camera input still works when ambient motion is paused.
     camera.position.lerp(desiredPosition, isPaused ? 1 : .055);
     cameraTarget.lerp(desiredTarget, isPaused ? 1 : .055);
+    }
+    const fov = 42 + warp * 14;
+    if (Math.abs(camera.fov - fov) > .01) { camera.fov = fov; camera.updateProjectionMatrix(); }
     camera.lookAt(cameraTarget);
   }
 
@@ -428,11 +510,13 @@ function initializeArmillary(host, canvas) {
     instrument.rotation.set(-.055 + easedY * .15 + Math.sin(elapsed * .23) * .09,
       .1 + easedX * .23 + elapsed * .07, -.07 + Math.sin(elapsed * .14) * .06);
     updateCamera(scatter, charge);
-    world.update({ time: elapsed, scatter, charge, realm, immersive });
+    activity.strength += (activityTarget - activity.strength) * (isPaused ? 1 : .07);
+    activity.progress = Math.min(1, (elapsed - activityStarted) / 7);
+    world.update({ time: elapsed, scatter, charge, realm, immersive, activity, warp });
     nucleus.rotation.y = elapsed * .15;
     nucleus.scale.setScalar(Math.max(.035, (1 - Math.min(1, scatter * 2.7)) * (1 - charge * .25)));
     nucleusMaterial.uniforms.uTime.value = elapsed;
-    nucleusMaterial.uniforms.uHeat.value = heat;
+    nucleusMaterial.uniforms.uHeat.value = heat + (activity.kind === 'resonance' ? activity.strength * .55 : 0);
     for (const orbit of orbits) {
       const { rotor, frame, tilt, band, pieces, details, speed, phase } = orbit;
       rotor.rotation.z = phase + elapsed * speed * 2.8 + cycle.spin * .22;
@@ -512,7 +596,12 @@ function initializeArmillary(host, canvas) {
     innerGlow.scale.setScalar(2.5 + scatter * 2.1);
     innerGlow.material.opacity = .48 + charge * .45 + scatter * .13;
     heartLight.intensity = 13 + heat * 14;
-    renderer.render(scene, camera);
+    const started = performance.now();
+    cinematic.render({ time: elapsed, warp, immersive, heat, activity: activity.strength });
+    if (framesMeasured++ > 80 && framesMeasured < 220) {
+      renderCost += (performance.now() - started - renderCost) * .04;
+      if (framesMeasured === 219 && renderCost > 28 && cinematic.reduceResolution()) resize();
+    }
   }
 
   function tick(timestamp) {
@@ -546,6 +635,7 @@ function initializeArmillary(host, canvas) {
     camera.updateProjectionMatrix();
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, smallScreen.matches ? 1.25 : 1.6));
     renderer.setSize(width, height, false);
+    cinematic.resize(width, height, renderer.getPixelRatio());
     render();
   }
 
@@ -574,15 +664,35 @@ function initializeArmillary(host, canvas) {
     realm = Object.hasOwn(views, event.detail?.realm) ? event.detail.realm : 'overview';
     orbit.x = orbit.y = orbit.zoom = 0;
     pointerX = pointerY = 0;
+    if (!immersive) flightStarted = -100;
     resize();
     syncAnimation();
   }
   function onWorldOrbit(event) {
+    flightStarted = -100;
     for (const key of ['x', 'y', 'zoom']) {
       const value = event.detail?.[key];
       if (Number.isFinite(value)) orbit[key] = THREE.MathUtils.clamp(value, key === 'zoom' ? -.5 : -1, 1);
     }
     if (immersive && isPaused && !disposed && !contextLost) render();
+  }
+  function onActivity(event) {
+    if (!['resonance', 'signal', 'forge'].includes(event.detail?.kind)) return;
+    activity.kind = event.detail.kind;
+    activityTarget = event.detail.active ? THREE.MathUtils.clamp(Number(event.detail.strength) || 0, 0, 1) : 0;
+    if (event.detail.active) activityStarted = elapsed;
+    if (isPaused && !disposed && !contextLost) render();
+  }
+  function onFlight(event) {
+    flightStarted = event.detail?.active && !isPaused ? elapsed : -100;
+    flightDuration = THREE.MathUtils.clamp(Number(event.detail?.duration) || 3.4, 1, 6);
+  }
+  function onCapture() {
+    if (!immersive || disposed || contextLost) return;
+    render();
+    canvas.toBlob(blob => {
+      if (blob) document.dispatchEvent(new CustomEvent('world-capture-ready', { detail: { blob } }));
+    }, 'image/png');
   }
   function onContextLost(event) {
     event.preventDefault();
@@ -592,6 +702,8 @@ function initializeArmillary(host, canvas) {
   }
   function onContextRestored() {
     contextLost = false;
+    renderer.setClearColor(0x030a0e, 1);
+    regenerateReflections();
     resize();
     host.dataset.render = 'webgl';
     syncAnimation();
@@ -612,6 +724,13 @@ function initializeArmillary(host, canvas) {
   document.addEventListener('energy-burst', onBurst);
   document.addEventListener('world-view', onWorldView);
   document.addEventListener('world-orbit', onWorldOrbit);
+  document.addEventListener('world-activity', onActivity);
+  document.addEventListener('world-flight', onFlight);
+  document.addEventListener('world-capture', onCapture);
+  canvas.addEventListener('pointerdown', onSceneDown);
+  canvas.addEventListener('pointermove', onSceneMove);
+  canvas.addEventListener('pointerup', onSceneUp);
+  canvas.addEventListener('pointercancel', cancelSceneTap);
   reducedMotion.addEventListener('change', syncAnimation);
   canvas.addEventListener('webglcontextlost', onContextLost);
   canvas.addEventListener('webglcontextrestored', onContextRestored);
@@ -631,6 +750,13 @@ function initializeArmillary(host, canvas) {
     document.removeEventListener('energy-burst', onBurst);
     document.removeEventListener('world-view', onWorldView);
     document.removeEventListener('world-orbit', onWorldOrbit);
+    document.removeEventListener('world-activity', onActivity);
+    document.removeEventListener('world-flight', onFlight);
+    document.removeEventListener('world-capture', onCapture);
+    canvas.removeEventListener('pointerdown', onSceneDown);
+    canvas.removeEventListener('pointermove', onSceneMove);
+    canvas.removeEventListener('pointerup', onSceneUp);
+    canvas.removeEventListener('pointercancel', cancelSceneTap);
     reducedMotion.removeEventListener('change', syncAnimation);
     canvas.removeEventListener('webglcontextlost', onContextLost);
     canvas.removeEventListener('webglcontextrestored', onContextRestored);
@@ -638,6 +764,7 @@ function initializeArmillary(host, canvas) {
     window.removeEventListener('pageshow', syncAnimation);
     resources.forEach(resource => resource.dispose());
     world.dispose();
+    cinematic.dispose();
     renderer.dispose();
   }
   window.addEventListener('pagehide', dispose);

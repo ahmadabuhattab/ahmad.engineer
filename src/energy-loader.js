@@ -46,13 +46,13 @@ function enhance() {
   updateControl();
   if (loaded || !host || (host.dataset.world !== 'true' && (document.body.classList.contains('motion-paused') || navigator.connection?.saveData))) return;
   loaded = true;
-  // Pick one renderer for this page's lifetime; it resizes without replacing
-  // the canvas context. The phone version never downloads the Three.js bundle.
-  const mobile = matchMedia('(max-width: 760px)').matches || navigator.connection?.saveData;
+  // All capable screens get the same real geometry. Data-saving connections
+  // retain the lightweight projected scene, and failed WebGL has that fallback.
+  const lightweight = navigator.connection?.saveData;
   requestAnimationFrame(() => requestAnimationFrame(() => {
-    (mobile ? import('./energy-mobile.js') : import('./energy-core.js')).catch(() => {
-      host.dataset.render = 'fallback';
-    });
+    (lightweight ? import('./energy-mobile.js') : import('./energy-core.js'))
+      .then(() => host.dataset.render === 'fallback' ? import('./energy-mobile.js') : null)
+      .catch(() => { host.dataset.render = 'fallback'; });
   }));
 }
 if (document.readyState === 'complete') enhance();
