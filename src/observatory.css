@@ -76,7 +76,7 @@
   .world-dialog :is(button,a):focus-visible { outline:2px solid #e9d29e; outline-offset:4px; }
   .world-ui-button:disabled { opacity:.4; cursor:wait; }
   .world-dialog[data-render=fallback] .world-camera-tools { display:none; }
-  .world-dialog.world-compact { display:grid; grid-template-areas:'top' 'stage' 'camera' 'info' 'destinations'; grid-template-rows:auto 260px auto auto auto; overflow-y:auto; align-content:start; }
+  .world-dialog.world-compact[open] { display:grid; grid-template-areas:'top' 'stage' 'camera' 'info' 'destinations'; grid-template-rows:auto 260px auto auto auto; overflow-y:auto; align-content:start; }
   .world-compact .world-topbar { grid-area:top; position:relative; flex-wrap:wrap; padding:14px 18px; }
   .world-compact .world-signature { max-width:100%; overflow-wrap:anywhere; }
   .world-compact .world-top-actions { flex-wrap:wrap; max-width:100%; }
