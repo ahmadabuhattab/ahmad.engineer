@@ -1,4 +1,6 @@
 import './experience.css';
+import './observatory.css';
+import './world-explorer.js';
 
 const motionPreference = matchMedia('(prefers-reduced-motion: reduce)');
 const motionButton = document.getElementById('experienceMotion');

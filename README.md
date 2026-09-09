@@ -16,14 +16,17 @@ Run the build before previewing. It regenerates the ignored `public/card/` asset
 
 - `public/index.html` contains the complete crawlable portfolio, biography, experience, project descriptions, and contact links.
 - `src/experience.*` provides layout, motion controls, scroll reveals, and progress. Content remains readable without JavaScript.
+- `src/world-environment.js` supplies the procedural observatory: portal, luminous floor, skyline, intelligence constellation, and industrial landmark. It shares the desktop renderer and burst clock; there are no downloaded 3D models, textures, or postprocessing passes.
+- `src/world-explorer.js` moves the existing canvas into a native modal dialog for exploration. Destination buttons fly between four camera views; dragging, scrolling, or labeled camera buttons change the view. Escape restores the opener and page position, while chapter links return to the relevant portfolio section. Short screens and enlarged text use a scrollable layout.
 - `src/energy-loader.js` upgrades the immediately visible artwork to interactive WebGL on larger screens or a small Canvas 2D geometry renderer on phones. The renderer is selected once per page and resizes in place. Reduced-motion preferences default to static artwork, with an explicit “Enable animation” option; data-saving users retain the lightweight artwork.
 - `src/energy-core.*` and `src/energy-mobile.js` animate metallic orbit fragments, nucleus shards, shockwaves, and luminous particles. The shared `src/energy-cycle.js` timeline charges, explodes, suspends, and reconstructs the sculpture every 15 seconds. “Release energy” or a short tap on the sculpture starts the sequence when it is in orbit.
 - The motion control freezes the scene at its current position. Rendering also stops outside the viewport and while the page is hidden, and resumes without advancing through the elapsed hidden time. Resolution and frame rate are bounded. Loss of WebGL returns to the artwork and recovery restores the scene. The collector card retains its original independent controls.
+- Explicitly entering the observatory initializes a still, manually explorable scene even with reduced motion. Camera inputs redraw without resuming ambient motion. Data-saving visitors use the lightweight Canvas renderer when they enter; phones do not download the desktop Three.js bundle.
 - `src/steel-card.js`, `src/steel-card.css`, `src/steelworks.js`, and the collector-card markup are preserved from the existing STELCO experience.
 - `public/photos.html` keeps the existing gallery with accurate image metadata. `public/sitemap.xml` lists canonical pages and the gallery images.
 - Fonts are the same Google Fonts versions, now served locally. Licenses and exact source URLs are in `public/fonts/README.md`.
 
-The share preview is `public/og-portfolio-2026.jpg` (1200 × 630). The lightweight hero artwork is `public/energy-core-2026.jpg` (900 × 900). Both are rendered from the portfolio’s original orbital scene.
+The share preview is `public/og-portfolio-2026.jpg` (1200 × 630). Hero artwork is served responsively: `public/observatory-2026.jpg` on desktop and `public/energy-core-2026.jpg` on phones. These images are rendered from the actual portfolio scenes and appear before interactive rendering starts.
 
 ## Release verification — September 6, 2026
 

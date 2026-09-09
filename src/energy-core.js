@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { sampleCycle, CYCLE_DURATION, BURST_START } from './energy-cycle.js';
+import { createWorldEnvironment } from './world-environment.js';
 import './energy-core.css';
 
 // A small, self-contained armillary: real geometry, a luminous nucleus, no
@@ -32,8 +33,8 @@ function initializeArmillary(host, canvas) {
   renderer.toneMappingExposure = 1.18;
 
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 45);
-  camera.position.set(0, 0, 10.6);
+  const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 140);
+  camera.position.set(1, 4, 20);
   const instrument = new THREE.Group();
   scene.add(instrument);
   const resources = new Set();
@@ -51,6 +52,7 @@ function initializeArmillary(host, canvas) {
   const heartLight = new THREE.PointLight(0xffbf73, 13, 9, 2);
   heartLight.position.set(0, 0, 0.45);
   scene.add(heartLight);
+  const world = createWorldEnvironment(THREE, scene);
 
   const glowTexture = retain(makeGlowTexture());
   function glow(color, scale, opacity = 0.4) {
@@ -369,11 +371,49 @@ function initializeArmillary(host, canvas) {
   let pointerY = 0;
   let easedX = 0;
   let easedY = 0;
-  let baseCameraDistance = 10.1;
   let lastPhase = '';
+  let immersive = host.dataset.world === 'true';
+  let realm = host.dataset.realm || 'overview';
+  const orbit = { x: 0, y: 0, zoom: 0 };
+  const cameraTarget = new THREE.Vector3(-3, -.6, 0);
+  const desiredPosition = new THREE.Vector3();
+  const desiredTarget = new THREE.Vector3();
+  const viewOffset = new THREE.Vector3();
+  const viewSphere = new THREE.Spherical();
+  const views = {
+    overview: { position: [12, 7, 19], target: [0, -.2, -4] },
+    energy: { position: [5.5, 2.7, 10], target: [0, -.15, 0] },
+    intelligence: { position: [-5, 2.5, 5], target: [-8, 0, -4] },
+    industry: { position: [12, 3.2, 5], target: [8, 0, -5] },
+  };
+
+  function updateCamera(scatter, charge) {
+    if (immersive) {
+      const view = views[realm] || views.overview;
+      desiredTarget.fromArray(view.target);
+      viewOffset.fromArray(view.position).sub(desiredTarget);
+      viewSphere.setFromVector3(viewOffset);
+      viewSphere.theta += orbit.x * 1.35;
+      viewSphere.phi = THREE.MathUtils.clamp(viewSphere.phi + orbit.y * .55, .38, 1.49);
+      viewSphere.radius *= (1 - orbit.zoom * .38) * Math.max(1, Math.min(1.9, .9 / camera.aspect));
+      if (realm === 'energy') viewSphere.radius += scatter * 1.2;
+      desiredPosition.setFromSpherical(viewSphere).add(desiredTarget);
+    } else if (smallScreen.matches) {
+      desiredTarget.set(0, -.5, -1);
+      desiredPosition.set(.6, 2.6, Math.max(13, 12 / camera.aspect) + scatter * 1.5);
+    } else {
+      desiredTarget.set(-3.8 + easedX * .25, -.4 + easedY * .18, -1.2);
+      const arrival = isPaused ? 0 : Math.pow(Math.max(0, 1 - elapsed / 3.2), 3);
+      desiredPosition.set(.7 + easedX * .35, 2.5 + arrival * 2, 14 + arrival * 7 + scatter * 1.1 + charge * .15);
+    }
+    // Direct camera input still works when ambient motion is paused.
+    camera.position.lerp(desiredPosition, isPaused ? 1 : .055);
+    cameraTarget.lerp(desiredTarget, isPaused ? 1 : .055);
+    camera.lookAt(cameraTarget);
+  }
 
   function canAnimate() {
-    return !disposed && !contextLost && isVisible && !document.hidden && !isPaused;
+    return !disposed && !contextLost && (isVisible || immersive) && !document.hidden && !isPaused;
   }
 
   function render() {
@@ -387,7 +427,8 @@ function initializeArmillary(host, canvas) {
     }
     instrument.rotation.set(-.055 + easedY * .15 + Math.sin(elapsed * .23) * .09,
       .1 + easedX * .23 + elapsed * .07, -.07 + Math.sin(elapsed * .14) * .06);
-    camera.position.z = baseCameraDistance + scatter * 3.2 + charge * .25;
+    updateCamera(scatter, charge);
+    world.update({ time: elapsed, scatter, charge, realm, immersive });
     nucleus.rotation.y = elapsed * .15;
     nucleus.scale.setScalar(Math.max(.035, (1 - Math.min(1, scatter * 2.7)) * (1 - charge * .25)));
     nucleusMaterial.uniforms.uTime.value = elapsed;
@@ -502,8 +543,6 @@ function initializeArmillary(host, canvas) {
     const { width, height } = host.getBoundingClientRect();
     if (!width || !height) return;
     camera.aspect = width / height;
-    baseCameraDistance = Math.max(10.1, 10.1 / camera.aspect);
-    camera.position.z = baseCameraDistance;
     camera.updateProjectionMatrix();
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, smallScreen.matches ? 1.25 : 1.6));
     renderer.setSize(width, height, false);
@@ -511,7 +550,7 @@ function initializeArmillary(host, canvas) {
   }
 
   function onPointerMove(event) {
-    if (event.pointerType === 'touch' || !canAnimate()) return;
+    if (immersive || event.pointerType === 'touch' || !canAnimate()) return;
     const bounds = host.getBoundingClientRect();
     pointerX = ((event.clientX - bounds.left) / bounds.width - 0.5) * 2;
     pointerY = ((event.clientY - bounds.top) / bounds.height - 0.5) * 2;
@@ -529,6 +568,21 @@ function initializeArmillary(host, canvas) {
     if (typeof event.detail?.paused !== 'boolean') return;
     isPaused = event.detail.paused;
     syncAnimation();
+  }
+  function onWorldView(event) {
+    immersive = event.detail?.active === true;
+    realm = Object.hasOwn(views, event.detail?.realm) ? event.detail.realm : 'overview';
+    orbit.x = orbit.y = orbit.zoom = 0;
+    pointerX = pointerY = 0;
+    resize();
+    syncAnimation();
+  }
+  function onWorldOrbit(event) {
+    for (const key of ['x', 'y', 'zoom']) {
+      const value = event.detail?.[key];
+      if (Number.isFinite(value)) orbit[key] = THREE.MathUtils.clamp(value, key === 'zoom' ? -.5 : -1, 1);
+    }
+    if (immersive && isPaused && !disposed && !contextLost) render();
   }
   function onContextLost(event) {
     event.preventDefault();
@@ -556,6 +610,8 @@ function initializeArmillary(host, canvas) {
   document.addEventListener('visibilitychange', syncAnimation);
   document.addEventListener('experience-motion', onMotion);
   document.addEventListener('energy-burst', onBurst);
+  document.addEventListener('world-view', onWorldView);
+  document.addEventListener('world-orbit', onWorldOrbit);
   reducedMotion.addEventListener('change', syncAnimation);
   canvas.addEventListener('webglcontextlost', onContextLost);
   canvas.addEventListener('webglcontextrestored', onContextRestored);
@@ -573,12 +629,15 @@ function initializeArmillary(host, canvas) {
     document.removeEventListener('visibilitychange', syncAnimation);
     document.removeEventListener('experience-motion', onMotion);
     document.removeEventListener('energy-burst', onBurst);
+    document.removeEventListener('world-view', onWorldView);
+    document.removeEventListener('world-orbit', onWorldOrbit);
     reducedMotion.removeEventListener('change', syncAnimation);
     canvas.removeEventListener('webglcontextlost', onContextLost);
     canvas.removeEventListener('webglcontextrestored', onContextRestored);
     window.removeEventListener('pagehide', dispose);
     window.removeEventListener('pageshow', syncAnimation);
     resources.forEach(resource => resource.dispose());
+    world.dispose();
     renderer.dispose();
   }
   window.addEventListener('pagehide', dispose);

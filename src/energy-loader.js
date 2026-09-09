@@ -29,25 +29,26 @@ button?.addEventListener('click', burst);
 // A short tap also activates the sculpture. Scrolling and dragging never do.
 let pointerStart;
 canvas?.addEventListener('pointerdown', event => {
-  pointerStart = event.isPrimary && event.button === 0 ? { x: event.clientX, y: event.clientY, id: event.pointerId } : null;
+  pointerStart = host?.dataset.world !== 'true' && event.isPrimary && event.button === 0 ? { x: event.clientX, y: event.clientY, id: event.pointerId } : null;
 });
 canvas?.addEventListener('pointerup', event => {
-  if (pointerStart?.id === event.pointerId && Math.hypot(event.clientX - pointerStart.x, event.clientY - pointerStart.y) < 8) burst();
+  if (host?.dataset.world !== 'true' && pointerStart?.id === event.pointerId && Math.hypot(event.clientX - pointerStart.x, event.clientY - pointerStart.y) < 8) burst();
   pointerStart = null;
 });
 canvas?.addEventListener('pointercancel', () => { pointerStart = null; });
 canvas?.addEventListener('pointerleave', () => { pointerStart = null; });
 document.addEventListener('energy-phase', updateControl);
 document.addEventListener('experience-motion', enhance);
+document.addEventListener('world-view', enhance);
 if (host) new MutationObserver(updateControl).observe(host, { attributes: true, attributeFilter: ['data-render'] });
 
 function enhance() {
   updateControl();
-  if (loaded || !host || document.body.classList.contains('motion-paused') || navigator.connection?.saveData) return;
+  if (loaded || !host || (host.dataset.world !== 'true' && (document.body.classList.contains('motion-paused') || navigator.connection?.saveData))) return;
   loaded = true;
   // Pick one renderer for this page's lifetime; it resizes without replacing
   // the canvas context. The phone version never downloads the Three.js bundle.
-  const mobile = matchMedia('(max-width: 760px)').matches;
+  const mobile = matchMedia('(max-width: 760px)').matches || navigator.connection?.saveData;
   requestAnimationFrame(() => requestAnimationFrame(() => {
     (mobile ? import('./energy-mobile.js') : import('./energy-core.js')).catch(() => {
       host.dataset.render = 'fallback';
