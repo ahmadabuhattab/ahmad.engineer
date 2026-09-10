@@ -1,4 +1,5 @@
 import { sampleCycle, CYCLE_DURATION, BURST_START } from './energy-cycle.js';
+import { sampleSpacetime } from './world-spacetime.js';
 
 // A real geometry renderer for small screens. Every shard has a permanent home:
 // the same continuous displacement carries it out into space and back again.
@@ -203,6 +204,7 @@ function initializeMobileEnergy(host, canvas) {
   let inView = true, disposed = false;
   let paused = document.body.classList.contains('motion-paused');
   let lastPhase = '';
+  let spacetime = sampleSpacetime(0, false);
   const canAnimate = () => !disposed && !paused && !document.hidden && (inView || worldActive);
 
   function render() {
@@ -224,7 +226,7 @@ function initializeMobileEnergy(host, canvas) {
 
     context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
     context.clearRect(0, 0, width, height);
-    const unit = Math.min(width, height) * view.scale * (1 + orbit.zoom * 0.35) / (1 + scatter * view.retreat);
+    const unit = Math.min(width, height) * view.scale * (1 + orbit.zoom * 0.35) / (1 + scatter * view.retreat) * (1 - spacetime.collapse * .83 + spacetime.bloom * .05);
     const screenCenterX = width * (0.5 + (width > 760 ? 0.13 * (1 - view.world) : 0));
     const screenCenterY = height * (0.44 + view.world * 0.015);
     const globalY = Math.sin(elapsed * 0.065) * 0.065 + orbit.x * 0.58;
@@ -858,6 +860,28 @@ function initializeMobileEnergy(host, canvas) {
 
     paintQueue.sort((a, b) => a.z - b.z);
     for (const item of paintQueue) item.paint();
+    if (spacetime.strength > .001) {
+      const extent = Math.min(width, height) * (.3 - spacetime.collapse * .16 + spacetime.bloom * .19);
+      context.save();
+      context.translate(centerX, centerY);
+      context.rotate(-.24 + spacetime.collapse * .3);
+      context.globalCompositeOperation = 'lighter';
+      for (let lane = 0; lane < 16; lane++) {
+        const radius = extent * (.9 + lane * .016);
+        const phase = elapsed * (.14 + lane * .006) + lane * 2.4;
+        context.beginPath();
+        context.ellipse(0, 0, radius, radius * (.32 + lane * .002), 0, phase, phase + Math.PI * 1.15);
+        context.strokeStyle = rgba(lane % 3 ? bronze : teal, spacetime.strength * (.14 + spacetime.collapse * .25));
+        context.lineWidth = lane % 4 ? .7 : 1.6;
+        context.stroke();
+      }
+      context.globalCompositeOperation = 'source-over';
+      if (spacetime.collapse > .6) {
+        context.beginPath(); context.arc(0, 0, extent * .22 * spacetime.collapse, 0, TAU);
+        context.fillStyle = '#020607'; context.fill();
+      }
+      context.restore();
+    }
   }
 
   function stop() {
@@ -957,6 +981,10 @@ function initializeMobileEnergy(host, canvas) {
       if (!disposed && blob) document.dispatchEvent(new CustomEvent('world-capture-ready', { detail: { blob } }));
     }, 'image/png');
   }
+  function onSingularity(event) {
+    spacetime = sampleSpacetime(event.detail?.progress, event.detail?.active === true);
+    if (paused && !disposed) render();
+  }
   function onPageHide(event) {
     stop();
     if (!event.persisted) dispose();
@@ -978,6 +1006,7 @@ function initializeMobileEnergy(host, canvas) {
     document.removeEventListener('world-activity', onWorldActivity);
     document.removeEventListener('world-flight', onWorldFlight);
     document.removeEventListener('world-capture', onWorldCapture);
+    document.removeEventListener('world-singularity', onSingularity);
     motion.removeEventListener('change', updatePlayback);
     window.removeEventListener('pagehide', onPageHide);
     window.removeEventListener('pageshow', onPageShow);
@@ -998,6 +1027,7 @@ function initializeMobileEnergy(host, canvas) {
   document.addEventListener('world-activity', onWorldActivity);
   document.addEventListener('world-flight', onWorldFlight);
   document.addEventListener('world-capture', onWorldCapture);
+  document.addEventListener('world-singularity', onSingularity);
   motion.addEventListener('change', updatePlayback);
   window.addEventListener('pagehide', onPageHide);
   window.addEventListener('pageshow', onPageShow);
