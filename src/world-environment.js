@@ -663,9 +663,11 @@ export function createWorldEnvironment(THREE, scene) {
   let disposed = false;
   let previousTime = 0;
   const targetRealm = new THREE.Vector3();
-  function update({ time = 0, scatter = 0, charge = 0, realm = 'energy', immersive = false, activity = null, warp = 0 } = {}) {
+  function update({ time = 0, scatter = 0, charge = 0, realm = 'energy', immersive = false, activity = null, warp = 0, collapse = 0, bloom = 0 } = {}) {
     if (disposed) return;
     const clock = Number.isFinite(time) ? Math.max(0, time) : 0;
+    world.scale.setScalar(1 - clamp(collapse) * .83 + clamp(bloom) * .05);
+    world.rotation.y = clamp(collapse) * .38;
     const dt = Math.min(.1, Math.max(1 / 120, clock - previousTime));
     previousTime = clock;
     const ease = 1 - Math.exp(-dt * 5);

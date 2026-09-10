@@ -1,5 +1,8 @@
 import { createWorldAudio } from './world-audio.js';
+import { initializeWorldPointer } from './world-pointer.js';
+import { sampleSpacetime, SPACETIME_DURATION } from './world-spacetime.js';
 import './world-interface.css';
+import './world-spacetime.css';
 
 const dialog = document.getElementById('worldDialog');
 const stage = document.getElementById('worldStage');
@@ -12,7 +15,7 @@ const destinations = {
   overview: { index: '00 / THE OBSERVATORY', title: 'Follow the impossible.', copy: 'Three forces. One engineering mindset. Touch a landmark, follow the journey, or find your own way through.', link: '#about', action: 'Meet the engineer' },
   energy: { index: '01 / THE ENERGY CHAMBER', title: 'Everything starts with energy.', copy: 'Tune the field and watch a wave move through the chamber. A visual study inspired by the physics of interconnected systems.', link: '#work', action: 'Explore the engineering', study: 'resonance', experiment: 'Resonate the chamber', running: 'The field is resonating.' },
   intelligence: { index: '02 / THE INTELLIGENCE LATTICE', title: 'A thought becomes a signal.', copy: 'Send a pulse through the lattice. Connections light up as information travels from one node to the next.', link: '#work', action: 'Explore the AI projects', study: 'signal', experiment: 'Send a signal', running: 'Your signal is travelling through the lattice.' },
-  industry: { index: '03 / THE INDUSTRIAL HEART', title: 'An idea becomes a world.', copy: 'Ignite the furnace. Light, motion, and heat bring the structure to life — an imaginative echo of engineering at industrial scale.', link: '#in-the-field', action: 'Meet the real steelworks', study: 'forge', experiment: 'Ignite the forge', running: 'The furnace is alive. Follow the material flow.' },
+  industry: { index: '03 / THE INDUSTRIAL HEART', title: 'An idea becomes a world.', copy: 'Ignite the furnace. Light, motion, and heat bring the structure to life, an imaginative echo of engineering at industrial scale.', link: '#in-the-field', action: 'Meet the real steelworks', study: 'forge', experiment: 'Ignite the forge', running: 'The furnace is alive. Follow the material flow.' },
 };
 
 if (dialog && stage && visual && host && canvas && typeof dialog.showModal === 'function') {
@@ -25,8 +28,12 @@ if (dialog && stage && visual && host && canvas && typeof dialog.showModal === '
   let tour = false, tourTime = 0, tourStep = -1, tourActed = false;
   let flightRemaining = 0, activityRemaining = 0, strength = .65;
   let clockFrame = 0, lastTick = 0;
+  let spacetimeTime = 0, spacetimeActive = false, spacetimePhase = '';
   const visited = new Set();
   const audio = createWorldAudio();
+  const disposePointer = initializeWorldPointer(dialog, canvas);
+  const gravityButton = document.getElementById('worldGravity');
+  const gravityStatus = document.getElementById('worldGravityStatus');
   const tourButton = document.getElementById('worldTour');
   const experiment = document.getElementById('worldExperiment');
   const experimentStatus = document.getElementById('worldActivityStatus');
@@ -47,6 +54,7 @@ if (dialog && stage && visual && host && canvas && typeof dialog.showModal === '
   const clamp = (n, low, high) => Math.max(low, Math.min(high, n));
   const emitOrbit = () => document.dispatchEvent(new CustomEvent('world-orbit', { detail: { ...orbit } }));
   function selectRealm(next) {
+    stopSpacetime();
     stopActivity();
     realm = Object.hasOwn(destinations, next) ? next : 'overview';
     const item = destinations[realm];
@@ -92,6 +100,7 @@ if (dialog && stage && visual && host && canvas && typeof dialog.showModal === '
   function restore() {
     if (!active) return;
     active = false;
+    stopSpacetime();
     stopTour();
     stopActivity();
     flightRemaining = 0;
@@ -147,6 +156,7 @@ if (dialog && stage && visual && host && canvas && typeof dialog.showModal === '
     document.getElementById('worldCapture').disabled = !ready;
     experiment.disabled = !ready;
     tourButton.disabled = !ready;
+    gravityButton.disabled = !ready;
     hint.textContent = ready ? 'Drag to explore / Touch a landmark / 1 · 2 · 3 to travel' : failed ? 'Static view / Discover the work through the chapter links' : 'Preparing the observatory…';
     if (ready) runClock();
   }
@@ -163,7 +173,7 @@ if (dialog && stage && visual && host && canvas && typeof dialog.showModal === '
     emitOrbit();
   }));
   canvas.addEventListener('pointerdown', event => {
-    if (!active || !event.isPrimary || event.button !== 0) return;
+    if (!active || spacetimeActive || !event.isPrimary || event.button !== 0) return;
     stopTour();
     pointer = { id: event.pointerId, x: event.clientX, y: event.clientY, startX: orbit.x, startY: orbit.y };
     canvas.setPointerCapture(event.pointerId);
@@ -194,6 +204,7 @@ if (dialog && stage && visual && host && canvas && typeof dialog.showModal === '
   }
   function startTour() {
     if (tour) { stopTour(); return; }
+    stopSpacetime();
     if (isPaused()) motion.click();
     tour = true; tourTime = 0; tourStep = -1; tourActed = false;
     host.dataset.touring = 'true';
@@ -225,14 +236,61 @@ if (dialog && stage && visual && host && canvas && typeof dialog.showModal === '
     dispatch('world-activity', { kind: item.study, strength, active: true });
     updateAudio(); runClock();
   }
+  function stopSpacetime() {
+    if (!spacetimeActive) return;
+    spacetimeActive = false;
+    spacetimeTime = 0;
+    spacetimePhase = '';
+    dialog.classList.remove('world-singularity-active');
+    host.dataset.singularity = 'false';
+    gravityButton.textContent = 'Bend spacetime';
+    gravityButton.setAttribute('aria-pressed', 'false');
+    dispatch('world-singularity', { active: false, progress: 0 });
+    gravityStatus.textContent = '';
+    updateAudio();
+  }
+  function startSpacetime() {
+    if (spacetimeActive) { stopSpacetime(); return; }
+    if (!active || gravityButton.disabled) return;
+    stopTour();
+    selectRealm('overview');
+    flightRemaining = 0;
+    host.dataset.flight = 'false';
+    dispatch('world-flight', { active: false, progress: 1 });
+    spacetimeActive = true;
+    spacetimeTime = 0;
+    host.dataset.singularity = 'true';
+    dialog.classList.add('world-singularity-active');
+    gravityButton.textContent = 'Restore the world';
+    gravityButton.setAttribute('aria-pressed', 'true');
+    gravityButton.focus({ preventScroll: true });
+    gravityStatus.textContent = 'A world drawn together.';
+    dialog.style.setProperty('--spacetime-progress', '0');
+    dispatch('world-singularity', { active: true, progress: 0 });
+    // Choosing this cinematic experiment explicitly starts its animation.
+    if (isPaused()) motion.click();
+    runClock();
+  }
   function runClock() {
-    if (!active || isPaused() || document.hidden || clockFrame || !['webgl', 'canvas'].includes(host.dataset.render) || !(tour || flightRemaining > 0 || activityRemaining > 0)) return;
+    if (!active || isPaused() || document.hidden || clockFrame || !['webgl', 'canvas'].includes(host.dataset.render) || !(tour || spacetimeActive || flightRemaining > 0 || activityRemaining > 0)) return;
     lastTick = performance.now(); clockFrame = requestAnimationFrame(tick);
   }
   function tick(now) {
     clockFrame = 0;
     if (!active || isPaused() || document.hidden) return;
     const delta = Math.min(.1, (now - lastTick) / 1000); lastTick = now;
+    if (spacetimeActive) {
+      spacetimeTime = Math.min(SPACETIME_DURATION, spacetimeTime + delta);
+      const progress = spacetimeTime / SPACETIME_DURATION;
+      const { phase } = sampleSpacetime(progress);
+      dispatch('world-singularity', { active: true, progress });
+      dialog.style.setProperty('--spacetime-progress', String(progress));
+      if (phase !== spacetimePhase) {
+        spacetimePhase = phase;
+        gravityStatus.textContent = { gather: 'A world drawn together.', collapse: 'Everything bends.', hold: 'A moment outside time.', unfold: 'Possibility unfolds.', restore: 'Nothing exists in isolation.' }[phase];
+      }
+      if (progress === 1) stopSpacetime();
+    }
     if (flightRemaining > 0) {
       flightRemaining = Math.max(0, flightRemaining - delta);
       if (!flightRemaining) { host.dataset.flight = 'false'; dispatch('world-flight', { active: false, progress: 1 }); }
@@ -253,8 +311,9 @@ if (dialog && stage && visual && host && canvas && typeof dialog.showModal === '
       activityRemaining = Math.max(0, activityRemaining - delta);
       if (!activityRemaining) { stopActivity(); experimentStatus.textContent = 'The system settles. Try it again, or explore further.'; }
     }
-    if (tour || flightRemaining > 0 || activityRemaining > 0) clockFrame = requestAnimationFrame(tick);
+    if (tour || spacetimeActive || flightRemaining > 0 || activityRemaining > 0) clockFrame = requestAnimationFrame(tick);
   }
+  gravityButton.addEventListener('click', startSpacetime);
   tourButton.addEventListener('click', startTour);
   experiment.addEventListener('click', () => { if (experiment.getAttribute('aria-disabled') !== 'true') activateStudy(); });
   document.getElementById('worldIntensity').addEventListener('input', event => {
@@ -302,16 +361,17 @@ if (dialog && stage && visual && host && canvas && typeof dialog.showModal === '
     experimentStatus.textContent = 'Your view has been saved.';
   });
   document.addEventListener('world-select', event => {
-    if (!active || !Object.hasOwn(destinations, event.detail?.realm)) return;
+    if (!active || spacetimeActive || !Object.hasOwn(destinations, event.detail?.realm)) return;
     stopTour();
     if (realm === event.detail.realm) activateStudy(); else selectRealm(event.detail.realm);
   });
   dialog.addEventListener('keydown', event => {
     if (event.target.matches('input,textarea,select') || event.ctrlKey || event.metaKey || event.altKey) return;
+    if (event.key.toLowerCase() === 'b' && !event.repeat) { event.preventDefault(); startSpacetime(); }
     const target = { '1': 'energy', '2': 'intelligence', '3': 'industry', '0': 'overview' }[event.key];
     if (target) { stopTour(); selectRealm(target); }
   });
   document.addEventListener('visibilitychange', runClock);
-  addEventListener('pagehide', event => { if (!event.persisted) { audio.dispose(); layoutObserver.disconnect(); if (clockFrame) cancelAnimationFrame(clockFrame); } });
+  addEventListener('pagehide', event => { if (!event.persisted) { audio.dispose(); disposePointer(); layoutObserver.disconnect(); if (clockFrame) cancelAnimationFrame(clockFrame); } });
   addEventListener('pageshow', () => { updateAudio(); runClock(); });
 }

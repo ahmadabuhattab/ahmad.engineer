@@ -1,0 +1,37 @@
+@media screen {
+  .world-gravity { position:absolute; z-index:5; top:105px; left:294px; min-height:44px; padding:10px 16px; display:flex; align-items:center; gap:10px; border:1px solid #b9d4c744; background:#0a1a1ed9; color:#e8dfbc; font:400 12px 'Inter',sans-serif; backdrop-filter:blur(16px); }
+  .world-gravity:before { content:''; width:16px; height:16px; border:1px solid #dfc898; border-radius:50%; box-shadow:inset 0 0 6px #ddc79355,0 0 12px #91ded833; transform:rotate(-30deg) scaleY(.65); }
+  .world-gravity:hover { border-color:#e1d1a9; background:#153232ed; }
+  .world-gravity:disabled { opacity:.45; cursor:wait; }
+  .world-gravity:focus-visible { outline:2px solid #e3d9b5; outline-offset:5px; }
+  .world-spacetime-caption { display:none; position:absolute; left:18px; right:18px; bottom:56px; z-index:4; text-align:center; pointer-events:none; }
+  .world-spacetime-caption .micro { display:block; color:#b6c9be; font-size:9px; letter-spacing:.24em; margin-bottom:12px; }
+  .world-spacetime-caption strong { font:400 clamp(28px,4vw,52px)/1.05 'Instrument Serif',Georgia,serif; color:#f0e4c6; text-shadow:0 2px 30px #000; }
+  .world-spacetime-track { display:block; height:1px; width:160px; margin:22px auto 0; background:#bdd1c330; }
+  .world-spacetime-track i { display:block; height:100%; width:100%; background:#dbd3a9; transform-origin:left; transform:scaleX(var(--spacetime-progress,0)); }
+  .world-singularity-active .world-info,.world-singularity-active .world-destinations,.world-singularity-active .world-camera-tools,.world-singularity-active .energy-controls,.world-singularity-active .world-expedition,.world-singularity-active .world-hint { display:none!important; }
+  .world-singularity-active .world-spacetime-caption { display:block; }
+  .world-singularity-active .world-gravity { border-color:#d5c28a88; }
+  .world-cinema .world-gravity,.world-cinema .world-spacetime-caption { display:none!important; }
+  .world-dialog.world-compact .world-gravity { position:relative; inset:auto; grid-area:gravity; justify-self:start; margin:0 18px 12px; }
+  .world-dialog.world-compact[open] { grid-template-areas:'top' 'journey' 'gravity' 'stage' 'camera' 'info' 'destinations'; grid-template-rows:auto auto auto min(50svh,420px) auto auto auto; }
+  .world-dialog.world-compact.world-singularity-active[open] { display:grid; grid-template-areas:'top' 'gravity' 'stage' 'caption'; grid-template-rows:auto auto 60svh auto; overflow:auto; }
+  .world-compact.world-singularity-active .world-stage { position:relative; height:60svh; }
+  .world-compact.world-singularity-active .world-spacetime-caption { position:relative; inset:auto; grid-area:caption; padding:20px 18px 30px; }
+  @media(max-width:1100px) { .world-gravity { left:270px; } }
+  @media(max-width:900px) { .world-gravity { top:84px; left:auto; right:18px; font-size:11px; padding:10px 12px; } }
+  @media(max-width:600px) {
+    .world-expedition { width:calc((100% - 50px)/2); }
+    .world-gravity { width:calc((100% - 50px)/2); justify-content:center; padding:10px 7px; gap:6px; font-size:10px; }
+    .world-gravity:before { width:13px; height:13px; flex-shrink:0; }
+    .world-spacetime-caption { bottom:64px; }
+    .world-spacetime-caption .micro { font-size:8px; }
+    .world-dialog.world-compact .world-expedition,.world-dialog.world-compact .world-gravity { width:auto; }
+  }
+  @media(max-height:650px) and (min-width:601px) {
+    .world-gravity { top:76px; left:238px; right:auto; }
+    .world-details-open:not(.world-compact) .world-gravity { visibility:hidden; }
+    .world-spacetime-caption { bottom:32px; }
+  }
+  @media(max-height:700px) and (max-width:600px) { .world-gravity { top:70px; } }
+}

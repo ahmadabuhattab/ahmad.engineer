@@ -2,11 +2,12 @@ import * as THREE from 'three';
 import { sampleCycle, CYCLE_DURATION, BURST_START } from './energy-cycle.js';
 import { createWorldEnvironment } from './world-environment.js';
 import { createWorldCinematic } from './world-cinematic.js';
+import { createWorldSingularity } from './world-singularity.js';
+import { sampleSpacetime } from './world-spacetime.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import './energy-core.css';
 
-// A small, self-contained armillary: real geometry, a luminous nucleus, no
-// postprocessing passes. The page's background remains visible through it.
+// The armillary and observatory share one bounded HDR renderer and clock.
 const host = document.getElementById('energyScene');
 const canvas = document.getElementById('energyCanvas');
 
@@ -70,6 +71,7 @@ function initializeArmillary(host, canvas) {
   scene.environmentIntensity = .38;
   scene.environmentRotation.y = .65;
   const world = createWorldEnvironment(THREE, scene);
+  const singularity = createWorldSingularity(THREE, scene);
   const cinematic = createWorldCinematic(renderer, scene, camera, smallScreen.matches);
 
   const glowTexture = retain(makeGlowTexture());
@@ -398,6 +400,10 @@ function initializeArmillary(host, canvas) {
   let flightStarted = host.dataset.flight === 'true' ? 0 : -100;
   let flightDuration = 3.4;
   let warp = 0;
+  let spacetime = sampleSpacetime(0, false);
+  const gravityPosition = new THREE.Vector3();
+  const gravityTarget = new THREE.Vector3();
+  const lensPosition = new THREE.Vector3();
   let framesMeasured = 0, renderCost = 0;
   const flightPosition = new THREE.Vector3();
   const flightLook = new THREE.Vector3();
@@ -426,6 +432,12 @@ function initializeArmillary(host, canvas) {
     { realm: 'industry', sphere: new THREE.Sphere(new THREE.Vector3(8, -.2, -5), 2.5) },
   ];
   let tapStart = null;
+  let hoveredRealm = null;
+  function hoverLandmark(realm) {
+    if (realm === hoveredRealm) return;
+    hoveredRealm = realm;
+    document.dispatchEvent(new CustomEvent('world-hover', { detail: { realm } }));
+  }
   function pickLandmark(event) {
     const box = canvas.getBoundingClientRect();
     hitPointer.set((event.clientX - box.left) / box.width * 2 - 1, 1 - (event.clientY - box.top) / box.height * 2);
@@ -444,16 +456,21 @@ function initializeArmillary(host, canvas) {
   }
   function onSceneMove(event) {
     if (tapStart?.id === event.pointerId && Math.hypot(event.clientX - tapStart.x, event.clientY - tapStart.y) > 7) tapStart.dragged = true;
-    if (immersive && !event.buttons) canvas.style.cursor = pickLandmark(event) ? 'pointer' : 'grab';
+    if (immersive && !event.buttons) {
+      const hovered = spacetime.strength > 0 ? null : pickLandmark(event);
+      canvas.style.cursor = hovered ? 'pointer' : 'grab';
+      hoverLandmark(hovered);
+    }
   }
   function onSceneUp(event) {
-    if (immersive && tapStart?.id === event.pointerId && !tapStart.dragged) {
+    if (immersive && !spacetime.strength && tapStart?.id === event.pointerId && !tapStart.dragged) {
       const selected = pickLandmark(event);
       if (selected) document.dispatchEvent(new CustomEvent('world-select', { detail: { realm: selected } }));
     }
     tapStart = null;
   }
   function cancelSceneTap() { tapStart = null; }
+  function leaveScene() { hoverLandmark(null); }
 
   function updateCamera(scatter, charge) {
     if (immersive) {
@@ -475,6 +492,12 @@ function initializeArmillary(host, canvas) {
       const arrival = isPaused ? 0 : Math.pow(Math.max(0, 1 - elapsed / 3.2), 3);
       desiredPosition.set(.7 + easedX * .35, 2.5 + arrival * 2, 14 + arrival * 7 + scatter * 1.1 + charge * .15);
     }
+    if (immersive && spacetime.strength > 0) {
+      gravityPosition.set(Math.sin(spacetime.progress * Math.PI * 2) * 2.6, 2.4 - spacetime.collapse * .9, 15 - spacetime.collapse * 6);
+      gravityTarget.set(0, -.15, 0);
+      desiredPosition.lerp(gravityPosition, spacetime.strength);
+      desiredTarget.lerp(gravityTarget, spacetime.strength);
+    }
     const journey = (elapsed - flightStarted) / flightDuration;
     warp = immersive && journey >= 0 && journey < 1 && !isPaused ? Math.sin(journey * Math.PI) : 0;
     if (warp > 0) {
@@ -489,8 +512,10 @@ function initializeArmillary(host, canvas) {
     camera.position.lerp(desiredPosition, isPaused ? 1 : .055);
     cameraTarget.lerp(desiredTarget, isPaused ? 1 : .055);
     }
-    const fov = 42 + warp * 14;
+    const fov = 42 + warp * 14 + spacetime.bloom * 8;
     if (Math.abs(camera.fov - fov) > .01) { camera.fov = fov; camera.updateProjectionMatrix(); }
+    const roll = Math.sin(spacetime.progress * Math.PI * 2) * spacetime.strength * .075;
+    camera.up.set(Math.sin(roll), Math.cos(roll), 0);
     camera.lookAt(cameraTarget);
   }
 
@@ -512,7 +537,9 @@ function initializeArmillary(host, canvas) {
     updateCamera(scatter, charge);
     activity.strength += (activityTarget - activity.strength) * (isPaused ? 1 : .07);
     activity.progress = Math.min(1, (elapsed - activityStarted) / 7);
-    world.update({ time: elapsed, scatter, charge, realm, immersive, activity, warp });
+    world.update({ time: elapsed, scatter, charge, realm, immersive, activity, warp, collapse: spacetime.collapse, bloom: spacetime.bloom });
+    instrument.scale.setScalar(1 - spacetime.collapse * .92 + spacetime.bloom * .08);
+    singularity.update({ time: elapsed, scatter, charge, realm, immersive, singularity: spacetime, pointer: { x: easedX, y: easedY } });
     nucleus.rotation.y = elapsed * .15;
     nucleus.scale.setScalar(Math.max(.035, (1 - Math.min(1, scatter * 2.7)) * (1 - charge * .25)));
     nucleusMaterial.uniforms.uTime.value = elapsed;
@@ -597,7 +624,8 @@ function initializeArmillary(host, canvas) {
     innerGlow.material.opacity = .48 + charge * .45 + scatter * .13;
     heartLight.intensity = 13 + heat * 14;
     const started = performance.now();
-    cinematic.render({ time: elapsed, warp, immersive, heat, activity: activity.strength });
+    lensPosition.set(0, 0, 0).project(camera);
+    cinematic.render({ time: elapsed, warp, immersive, heat, activity: activity.strength, singularity: spacetime, lensX: lensPosition.x * .5 + .5, lensY: lensPosition.y * .5 + .5 });
     if (framesMeasured++ > 80 && framesMeasured < 220) {
       renderCost += (performance.now() - started - renderCost) * .04;
       if (framesMeasured === 219 && renderCost > 28 && cinematic.reduceResolution()) resize();
@@ -660,6 +688,7 @@ function initializeArmillary(host, canvas) {
     syncAnimation();
   }
   function onWorldView(event) {
+    hoverLandmark(null);
     immersive = event.detail?.active === true;
     realm = Object.hasOwn(views, event.detail?.realm) ? event.detail.realm : 'overview';
     orbit.x = orbit.y = orbit.zoom = 0;
@@ -686,6 +715,11 @@ function initializeArmillary(host, canvas) {
   function onFlight(event) {
     flightStarted = event.detail?.active && !isPaused ? elapsed : -100;
     flightDuration = THREE.MathUtils.clamp(Number(event.detail?.duration) || 3.4, 1, 6);
+  }
+  function onSingularity(event) {
+    spacetime = sampleSpacetime(event.detail?.progress, event.detail?.active === true);
+    hoverLandmark(null);
+    if (isPaused && !disposed && !contextLost) render();
   }
   function onCapture() {
     if (!immersive || disposed || contextLost) return;
@@ -727,10 +761,12 @@ function initializeArmillary(host, canvas) {
   document.addEventListener('world-activity', onActivity);
   document.addEventListener('world-flight', onFlight);
   document.addEventListener('world-capture', onCapture);
+  document.addEventListener('world-singularity', onSingularity);
   canvas.addEventListener('pointerdown', onSceneDown);
   canvas.addEventListener('pointermove', onSceneMove);
   canvas.addEventListener('pointerup', onSceneUp);
   canvas.addEventListener('pointercancel', cancelSceneTap);
+  canvas.addEventListener('pointerleave', leaveScene);
   reducedMotion.addEventListener('change', syncAnimation);
   canvas.addEventListener('webglcontextlost', onContextLost);
   canvas.addEventListener('webglcontextrestored', onContextRestored);
@@ -753,10 +789,12 @@ function initializeArmillary(host, canvas) {
     document.removeEventListener('world-activity', onActivity);
     document.removeEventListener('world-flight', onFlight);
     document.removeEventListener('world-capture', onCapture);
+    document.removeEventListener('world-singularity', onSingularity);
     canvas.removeEventListener('pointerdown', onSceneDown);
     canvas.removeEventListener('pointermove', onSceneMove);
     canvas.removeEventListener('pointerup', onSceneUp);
     canvas.removeEventListener('pointercancel', cancelSceneTap);
+    canvas.removeEventListener('pointerleave', leaveScene);
     reducedMotion.removeEventListener('change', syncAnimation);
     canvas.removeEventListener('webglcontextlost', onContextLost);
     canvas.removeEventListener('webglcontextrestored', onContextRestored);
@@ -764,6 +802,7 @@ function initializeArmillary(host, canvas) {
     window.removeEventListener('pageshow', syncAnimation);
     resources.forEach(resource => resource.dispose());
     world.dispose();
+    singularity.dispose();
     cinematic.dispose();
     renderer.dispose();
   }
