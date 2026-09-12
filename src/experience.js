@@ -1,6 +1,8 @@
 import './experience.css';
 import './observatory.css';
 import './world-explorer.js';
+import './field-lab.css';
+import './site-depth.js';
 
 const motionPreference = matchMedia('(prefers-reduced-motion: reduce)');
 const motionButton = document.getElementById('experienceMotion');

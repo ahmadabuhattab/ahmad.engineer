@@ -1,50 +1,50 @@
 @media screen {
-  .world-dialog { background:#030a0e; --world-ink:#e7e5d6; --world-gold:#ddc695; }
-  .world-stage:after { content:''; position:absolute; inset:0; pointer-events:none; background:linear-gradient(#030a0e55,transparent 20%,transparent 70%,#030a0e55); }
-  .world-signature { color:#e0e6da; }
-  .world-signature span { color:#92afa5; }
-  .world-topbar { background:linear-gradient(#030a0ed9,transparent); }
+  .world-dialog { background:#090909; --world-ink:#f4f4f4; --world-gold:#dedede; }
+  .world-stage:after { content:''; position:absolute; inset:0; pointer-events:none; background:linear-gradient(#09090955,transparent 20%,transparent 70%,#09090955); }
+  .world-signature { color:#e4e4e4; }
+  .world-signature span { color:#a8a8a8; }
+  .world-topbar { background:linear-gradient(#090909d9,transparent); }
   .world-top-actions { gap:8px; }
-  .world-ui-button { border-color:#bcd4c633; background:#07121199; backdrop-filter:blur(16px); }
+  .world-ui-button { border-color:#ffffff33; background:#090909bd; backdrop-filter:blur(16px); box-shadow:inset 0 1px #ffffff06; }
   .world-ui-button[hidden] { display:none!important; }
   .world-hint { top:40px; opacity:.75; }
   .world-expedition { position:absolute; top:105px; left:40px; z-index:3; width:215px; }
-  .world-expedition>.micro { display:block; font-size:8px; color:#a5b8b0; letter-spacing:.12em; }
-  #worldTour { display:flex; align-items:center; gap:25px; padding:10px 0; min-height:44px; border:0; border-bottom:1px solid #c5c49d66; background:none; color:#eee2b9; font:400 13px 'Inter',sans-serif; }
-  .world-journey-track { height:1px; background:#dbe9c923; margin-top:12px; visibility:hidden; }
-  .world-journey-track i { display:block; height:100%; background:#e9dcb2; transform:scaleX(var(--journey-progress,0)); transform-origin:left; box-shadow:0 0 12px #e9dcb2; }
+  .world-expedition>.micro { display:block; font-size:8px; color:#b3b3b3; letter-spacing:.12em; }
+  #worldTour { display:flex; align-items:center; gap:25px; padding:10px 0; min-height:44px; border:0; border-bottom:1px solid #c1c1c166; background:none; color:#e2e2e2; font:400 13px 'Inter',sans-serif; }
+  .world-journey-track { height:1px; background:#e4e4e423; margin-top:12px; visibility:hidden; }
+  .world-journey-track i { display:block; height:100%; background:#dcdcdc; transform:scaleX(var(--journey-progress,0)); transform-origin:left; box-shadow:0 0 12px #dcdcdc; }
   .world-touring .world-journey-track { visibility:visible; }
-  .world-info { bottom:140px; left:40px; padding:22px 24px; width:380px; max-width:calc(100% - 80px); background:linear-gradient(105deg,#051016ed,#061318bb); border:1px solid #b8ccba26; border-left:2px solid #d6c89b99; backdrop-filter:blur(20px); pointer-events:auto; }
+  .world-info { bottom:140px; left:40px; padding:22px 24px; width:380px; max-width:calc(100% - 80px); background:linear-gradient(105deg,#0e0e0eed,#111111bb); border:1px solid #c6c6c626; border-left:2px solid #c8c8c899; backdrop-filter:blur(20px); pointer-events:auto; }
   .world-info-heading { display:flex; justify-content:space-between; flex-wrap:wrap; gap:6px; }
-  .world-info-heading .micro { font-size:8px; letter-spacing:.11em; color:#d3d9c2; }
-  #worldDiscovered { font-size:8px; color:#a3b7a9; }
-  .world-info h2 { font-size:36px; line-height:1.02; margin:15px 0 18px; color:#f0e8d4; }
+  .world-info-heading .micro { font-size:8px; letter-spacing:.11em; color:#d6d6d6; }
+  #worldDiscovered { font-size:8px; color:#b2b2b2; }
+  .world-info h2 { font-size:36px; line-height:1.02; margin:15px 0 18px; color:#e8e8e8; }
   .world-study { display:flex; align-items:center; flex-wrap:wrap; gap:12px 20px; }
-  #worldExperiment { font:500 11px 'Inter',sans-serif; min-height:44px; padding:11px 16px; border:1px solid #b1d1c64a; color:#edf1df; background:linear-gradient(120deg,#34625877,#182d3288); box-shadow:inset 0 0 25px #66c6b30a; }
-  #worldExperiment:before { content:'✦'; margin-right:8px; color:#d9d3a9; }
-  #worldExperiment:hover:not([aria-disabled=true]) { border-color:#b1d1c6aa; box-shadow:0 0 25px #66c6b31a; }
-  #worldExperiment[aria-disabled=true] { color:#accbbd; }
+  #worldExperiment { font:500 11px 'Inter',sans-serif; min-height:44px; padding:11px 16px; border:1px solid #c9c9c94a; color:#efefef; background:linear-gradient(120deg,#57575777,#29292988); box-shadow:inset 0 0 25px #b0b0b00a; }
+  #worldExperiment:before { content:'✦'; margin-right:8px; color:#d1d1d1; }
+  #worldExperiment:hover:not([aria-disabled=true]) { border-color:#c9c9c9aa; box-shadow:0 0 25px #b0b0b01a; }
+  #worldExperiment[aria-disabled=true] { color:#c3c3c3; }
   #worldExperiment:disabled { opacity:.5; }
   #worldExperiment[hidden],#worldIntensityControl[hidden] { display:none; }
   #worldIntensityControl { display:block; flex:1; min-width:112px; }
-  #worldIntensityControl>span { display:flex; justify-content:space-between; gap:8px; font-size:9px; color:#bbc9bb; margin-bottom:2px; }
-  #worldIntensityValue { color:#e8d3a4; }
-  #worldIntensity { display:block; width:100%; height:28px; accent-color:#b9d1bb; cursor:ew-resize; }
-  .world-info #worldActivityStatus { width:100%; margin:0; color:#acc3b6; font:400 10px/1.6 'Inter',sans-serif; min-height:16px; }
+  #worldIntensityControl>span { display:flex; justify-content:space-between; gap:8px; font-size:9px; color:#c5c5c5; margin-bottom:2px; }
+  #worldIntensityValue { color:#d4d4d4; }
+  #worldIntensity { display:block; width:100%; height:28px; accent-color:#cacaca; cursor:ew-resize; }
+  .world-info #worldActivityStatus { width:100%; margin:0; color:#bdbdbd; font:400 10px/1.6 'Inter',sans-serif; min-height:16px; }
   .world-story { display:none; }
   .world-details-open .world-story { display:block; }
-  .world-info .world-story p { display:block; font-size:12px; color:#b9c8be; margin:15px 0 0; line-height:1.7; }
+  .world-info .world-story p { display:block; font-size:12px; color:#c4c4c4; margin:15px 0 0; line-height:1.7; }
   .world-info-footer { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:6px 18px; margin-top:12px; }
-  #worldDetails { font:400 10px 'Inter',sans-serif; padding:10px 0; min-height:36px; color:#a9bfb3; border:0; background:none; }
+  #worldDetails { font:400 10px 'Inter',sans-serif; padding:10px 0; min-height:36px; color:#b9b9b9; border:0; background:none; }
   .world-info-footer #worldChapter { font-size:10px; min-height:36px; padding-block:10px; }
   .world-camera-tools { top:auto; bottom:140px; right:40px; transform:none; flex-direction:row; gap:5px; }
   .world-camera-tools button { width:44px; flex-shrink:0; }
   .world-dialog .energy-controls { bottom:198px; right:40px; }
   .world-dialog .energy-status { max-width:150px; }
-  .world-destinations { bottom:32px; background:#071316ad; }
+  .world-destinations { bottom:32px; background:#111111ad; }
   .world-destinations button { position:relative; transition:background .4s,color .4s; }
-  .world-destinations button[aria-pressed=true] { background:linear-gradient(110deg,#516b5933,#9a937a0c); }
-  .world-destinations button[aria-pressed=true]:after { content:''; position:absolute; top:20px; right:20px; width:4px; height:4px; border-radius:50%; background:#d9e5b5; box-shadow:0 0 12px #def7c8; }
+  .world-destinations button[aria-pressed=true] { background:linear-gradient(110deg,#64646433,#9393930c); }
+  .world-destinations button[aria-pressed=true]:after { content:''; position:absolute; top:20px; right:20px; width:4px; height:4px; border-radius:50%; background:#dfdfdf; box-shadow:0 0 12px #eeeeee; }
   #worldShowInterface { position:absolute; bottom:22px; left:50%; transform:translateX(-50%); z-index:6; min-height:44px; padding:0 20px; }
   #worldShowInterface span { margin-left:14px; }
   #worldShowInterface[hidden] { display:none; }
@@ -125,7 +125,7 @@
     .world-destinations { left:18px; right:18px; bottom:12px; }
     .world-destinations button { min-height:54px; }
     .world-dialog:not(.world-compact).world-details-open .world-info { max-height:none; overflow:visible; backdrop-filter:none; }
-    .world-dialog:not(.world-compact) .world-info .world-story { position:fixed; left:330px; top:76px; width:calc(100vw - 348px); max-width:420px; max-height:calc(100dvh - 296px); overflow:auto; padding:14px 16px; background:#051017f2; border:1px solid #b8ccba33; backdrop-filter:blur(16px); }
+    .world-dialog:not(.world-compact) .world-info .world-story { position:fixed; left:330px; top:76px; width:calc(100vw - 348px); max-width:420px; max-height:calc(100dvh - 296px); overflow:auto; padding:14px 16px; background:#0e0e0ef2; border:1px solid #c6c6c633; backdrop-filter:blur(16px); }
     .world-dialog:not(.world-compact) .world-info .world-story p { margin:0; }
     .world-compact .world-camera-tools { display:flex; }
   }
