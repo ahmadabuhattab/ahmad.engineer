@@ -10,7 +10,7 @@
  * Six batched draws at peak; the eclipse and polar jets sleep between events.
  */
 export function createWorldSingularity(THREE, scene) {
-  const small = typeof matchMedia === 'function' && matchMedia('(max-width: 760px)').matches;
+  const small = typeof matchMedia === 'function' && matchMedia('(max-width: 760px), (pointer: coarse)').matches;
   const group = new THREE.Group();
   group.name = 'Observatory gravitational field';
   scene.add(group);

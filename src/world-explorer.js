@@ -22,6 +22,8 @@ if (dialog && stage && visual && host && canvas && typeof dialog.showModal === '
   const marker = document.createComment('Observatory home');
   visual.before(marker);
   let opener, realm = 'overview', active = false, pointer = null;
+  const touches = new Map();
+  let pinch = null;
   let orbit = { x: 0, y: 0, zoom: 0 };
   let scrollPosition = 0;
   let soundEnabled = false, ownsFullscreen = false;
@@ -41,19 +43,22 @@ if (dialog && stage && visual && host && canvas && typeof dialog.showModal === '
   const fullButton = document.getElementById('worldFullscreen');
   const detailsButton = document.getElementById('worldDetails');
   const isPaused = () => document.body.classList.contains('motion-paused');
+  const rendererReady = () => ['canvas', 'webgl'].includes(host.dataset.render);
   const dispatch = (name, detail) => document.dispatchEvent(new CustomEvent(name, { detail }));
   const updateAudio = () => audio.update({ realm, activity: activityRemaining > 0 ? strength : 0, paused: isPaused(), active });
   function fitLayout() {
     if (!active) return;
     const titleSize = parseFloat(getComputedStyle(document.getElementById('worldTitle')).fontSize);
-    dialog.classList.toggle('world-compact', titleSize > 44);
+    const shortViewport = innerWidth <= 600 ? innerHeight < 540 : innerHeight < 360;
+    dialog.classList.toggle('world-compact', titleSize > 44 || shortViewport);
   }
   const layoutObserver = new ResizeObserver(fitLayout);
   layoutObserver.observe(document.getElementById('worldTitle'));
-  window.addEventListener('resize', fitLayout, { passive: true });
+  window.addEventListener('resize', () => { clearGesture(); fitLayout(); }, { passive: true });
   const clamp = (n, low, high) => Math.max(low, Math.min(high, n));
   const emitOrbit = () => document.dispatchEvent(new CustomEvent('world-orbit', { detail: { ...orbit } }));
-  function selectRealm(next) {
+  function selectRealm(next, revealStage = true) {
+    clearGesture();
     stopSpacetime();
     stopActivity();
     realm = Object.hasOwn(destinations, next) ? next : 'overview';
@@ -77,7 +82,7 @@ if (dialog && stage && visual && host && canvas && typeof dialog.showModal === '
     emitOrbit();
     document.dispatchEvent(new CustomEvent('world-view', { detail: { active, realm } }));
     updateAudio();
-    if (dialog.classList.contains('world-compact')) stage.scrollIntoView({ block: 'start', behavior: isPaused() ? 'instant' : 'smooth' });
+    if (revealStage && dialog.classList.contains('world-compact')) stage.scrollIntoView({ block: 'start', behavior: isPaused() ? 'instant' : 'smooth' });
   }
   function openWorld(event) {
     opener = event.currentTarget;
@@ -90,8 +95,9 @@ if (dialog && stage && visual && host && canvas && typeof dialog.showModal === '
     dialog.showModal();
     dialog.scrollTop = 0;
     document.documentElement.classList.add('world-is-open');
-    selectRealm(opener.dataset.realm || 'overview');
+    selectRealm(opener.dataset.realm || 'overview', false);
     fitLayout();
+    dialog.scrollTop = 0;
     if (!isPaused()) startFlight();
     if (realm === 'overview' && !isPaused() && visited.size === 0) startTour();
     updateAudio();
@@ -105,13 +111,12 @@ if (dialog && stage && visual && host && canvas && typeof dialog.showModal === '
     stopActivity();
     flightRemaining = 0;
     host.dataset.flight = 'false';
-    if (clockFrame) cancelAnimationFrame(clockFrame);
-    clockFrame = 0;
+    stopClock();
     updateAudio();
     if (ownsFullscreen && document.fullscreenElement) document.exitFullscreen().catch(() => {});
     ownsFullscreen = false;
     setCinema(false);
-    pointer = null;
+    clearGesture();
     host.dataset.world = 'false';
     marker.after(visual);
     document.documentElement.classList.remove('world-is-open');
@@ -133,7 +138,7 @@ if (dialog && stage && visual && host && canvas && typeof dialog.showModal === '
     const target = document.querySelector(id);
     target?.setAttribute('tabindex', '-1');
     target?.focus({ preventScroll: true });
-    target?.scrollIntoView({ behavior: document.body.classList.contains('motion-paused') ? 'instant' : 'smooth' });
+    target?.scrollIntoView({ behavior: isPaused() ? 'instant' : 'auto' });
     history.replaceState(null, '', id);
   });
   const worldMotion = document.getElementById('worldMotion');
@@ -149,7 +154,7 @@ if (dialog && stage && visual && host && canvas && typeof dialog.showModal === '
   syncMotion();
   const hint = dialog.querySelector('.world-hint');
   function syncRenderer() {
-    const ready = ['canvas', 'webgl'].includes(host.dataset.render);
+    const ready = rendererReady();
     const failed = host.dataset.render === 'fallback';
     dialog.dataset.render = ready ? 'ready' : failed ? 'fallback' : 'loading';
     dialog.querySelectorAll('[data-world-camera]').forEach(button => { button.disabled = !ready; });
@@ -159,6 +164,7 @@ if (dialog && stage && visual && host && canvas && typeof dialog.showModal === '
     gravityButton.disabled = !ready;
     hint.textContent = ready ? 'Drag to explore / Touch a landmark / 1 · 2 · 3 to travel' : failed ? 'Static view / Discover the work through the chapter links' : 'Preparing the observatory…';
     if (ready) runClock();
+    else { stopClock(); clearGesture(); }
   }
   new MutationObserver(syncRenderer).observe(host, { attributes: true, attributeFilter: ['data-render'] });
   syncRenderer();
@@ -172,19 +178,62 @@ if (dialog && stage && visual && host && canvas && typeof dialog.showModal === '
     if (action === 'out') orbit.zoom = clamp(orbit.zoom - .15, -.5, 1);
     emitOrbit();
   }));
+  function beginDrag(id, point) {
+    pointer = { id, x: point.x, y: point.y, startX: orbit.x, startY: orbit.y };
+  }
+  function rebaseTouchGesture() {
+    pointer = pinch = null;
+    if (touches.size > 1) {
+      // The scrollable layout preserves the browser's own page zoom gesture.
+      if (dialog.classList.contains('world-compact') && !dialog.classList.contains('world-cinema')) return;
+      const [first, second] = touches.values();
+      pinch = { distance: Math.max(1, Math.hypot(first.x - second.x, first.y - second.y)), startZoom: orbit.zoom };
+    } else if (touches.size === 1) {
+      const [id, point] = touches.entries().next().value;
+      beginDrag(id, point);
+    }
+  }
+  function clearGesture() {
+    const captured = new Set(touches.keys());
+    if (pointer) captured.add(pointer.id);
+    touches.clear();
+    pointer = pinch = null;
+    for (const id of captured) if (canvas.hasPointerCapture(id)) canvas.releasePointerCapture(id);
+  }
   canvas.addEventListener('pointerdown', event => {
-    if (!active || spacetimeActive || !event.isPrimary || event.button !== 0) return;
+    if (!active || spacetimeActive || !rendererReady() || event.button !== 0) return;
+    if (!event.isPrimary && !(event.pointerType === 'touch' && touches.size)) return;
     stopTour();
-    pointer = { id: event.pointerId, x: event.clientX, y: event.clientY, startX: orbit.x, startY: orbit.y };
+    if (event.pointerType === 'touch') {
+      touches.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      rebaseTouchGesture();
+    } else {
+      if (touches.size) return;
+      beginDrag(event.pointerId, { x: event.clientX, y: event.clientY });
+    }
     canvas.setPointerCapture(event.pointerId);
   });
   canvas.addEventListener('pointermove', event => {
-    if (!active || pointer?.id !== event.pointerId) return;
+    if (!active || spacetimeActive || !rendererReady()) return;
+    if (touches.has(event.pointerId)) {
+      touches.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      if (pinch) {
+        const [first, second] = touches.values();
+        const distance = Math.max(1, Math.hypot(first.x - second.x, first.y - second.y));
+        orbit.zoom = clamp(pinch.startZoom + Math.log2(distance / pinch.distance) * .6, -.5, 1);
+        emitOrbit();
+        return;
+      }
+    }
+    if (pointer?.id !== event.pointerId) return;
     orbit.x = clamp(pointer.startX + (event.clientX - pointer.x) / Math.max(240, innerWidth * .55), -1, 1);
     orbit.y = clamp(pointer.startY + (event.clientY - pointer.y) / Math.max(240, innerHeight * .65), -1, 1);
     emitOrbit();
   });
-  const releasePointer = event => { if (pointer?.id === event.pointerId) pointer = null; };
+  const releasePointer = event => {
+    if (touches.delete(event.pointerId)) rebaseTouchGesture();
+    else if (pointer?.id === event.pointerId) pointer = null;
+  };
   canvas.addEventListener('pointerup', releasePointer);
   canvas.addEventListener('pointercancel', releasePointer);
   canvas.addEventListener('lostpointercapture', releasePointer);
@@ -272,12 +321,17 @@ if (dialog && stage && visual && host && canvas && typeof dialog.showModal === '
     runClock();
   }
   function runClock() {
-    if (!active || isPaused() || document.hidden || clockFrame || !['webgl', 'canvas'].includes(host.dataset.render) || !(tour || spacetimeActive || flightRemaining > 0 || activityRemaining > 0)) return;
+    if (!active || isPaused() || document.hidden || clockFrame || !rendererReady() || !(tour || spacetimeActive || flightRemaining > 0 || activityRemaining > 0)) return;
     lastTick = performance.now(); clockFrame = requestAnimationFrame(tick);
+  }
+  function stopClock() {
+    if (clockFrame) cancelAnimationFrame(clockFrame);
+    clockFrame = 0;
+    lastTick = 0;
   }
   function tick(now) {
     clockFrame = 0;
-    if (!active || isPaused() || document.hidden) return;
+    if (!active || isPaused() || document.hidden || !rendererReady()) return;
     const delta = Math.min(.1, (now - lastTick) / 1000); lastTick = now;
     if (spacetimeActive) {
       spacetimeTime = Math.min(SPACETIME_DURATION, spacetimeTime + delta);
@@ -371,7 +425,10 @@ if (dialog && stage && visual && host && canvas && typeof dialog.showModal === '
     const target = { '1': 'energy', '2': 'intelligence', '3': 'industry', '0': 'overview' }[event.key];
     if (target) { stopTour(); selectRealm(target); }
   });
-  document.addEventListener('visibilitychange', runClock);
-  addEventListener('pagehide', event => { if (!event.persisted) { audio.dispose(); disposePointer(); layoutObserver.disconnect(); if (clockFrame) cancelAnimationFrame(clockFrame); } });
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) { stopClock(); clearGesture(); }
+    else runClock();
+  });
+  addEventListener('pagehide', event => { stopClock(); clearGesture(); if (!event.persisted) { audio.dispose(); disposePointer(); layoutObserver.disconnect(); } });
   addEventListener('pageshow', () => { updateAudio(); runClock(); });
 }

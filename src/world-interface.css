@@ -151,4 +151,7 @@
     #worldExperiment { flex-shrink:0; }
   }
   .world-dialog.world-compact .world-info { max-height:none; overflow:visible; }
+  /* The scene shares a scrollable document on short screens and enlarged text. */
+  .world-dialog.world-compact:not(.world-cinema) #energyCanvas { touch-action:pan-y pinch-zoom; }
+  .world-compact .world-study { flex-wrap:wrap; }
 }
