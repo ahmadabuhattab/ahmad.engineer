@@ -44,7 +44,9 @@ export function createWorldEnvironment(THREE, scene) {
   const shader = (fragmentShader, options = {}) => keep(new THREE.ShaderMaterial({
     uniforms,
     vertexShader: surfaceVertex,
-    fragmentShader,
+    // GLSL pow(x, 2.) is undefined for negative x on some mobile GPUs.
+    // A shared Gaussian keeps both sides of every glow finite through HDR bloom.
+    fragmentShader: `float gaussian(float x) { return exp(-x * x); }\n${fragmentShader}`,
     transparent: true,
     depthWrite: false,
     ...options,
@@ -93,11 +95,11 @@ export function createWorldEnvironment(THREE, scene) {
         * smoothstep(2.97, 3.04, radius) * (1. - smoothstep(3.14, 3.23, radius));
       color += warm * (radialMarks * .40 + degreeMarks * .42);
       float energyRadius = 3.5 + uScatter * 15.;
-      float shock = exp(-pow((radius - energyRadius) / (.05 + uScatter * .10), 2.));
-      float echo = exp(-pow((radius - energyRadius * .82) / .025, 2.));
+      float shock = gaussian((radius - energyRadius) / (.05 + uScatter * .10));
+      float echo = gaussian((radius - energyRadius * .82) / .025);
       color += warm * (shock + echo * .35) * uScatter * 1.1;
       float resonanceRadius = 2.8 + uActivityProgress * 20.;
-      float resonanceRing = exp(-pow((radius - resonanceRadius) / .075, 2.));
+      float resonanceRing = gaussian((radius - resonanceRadius) / .075);
       color += warm * resonanceRing * uActivity.x * 1.8;
       color += warm * exp(-radius * .24) * (uCharge * .075 + uScatter * .045);
       float sweep = pow(max(0., cos(azimuth - uTime * .075)), 80.);
@@ -274,11 +276,11 @@ export function createWorldEnvironment(THREE, scene) {
     void main() {
       vec2 p = (vUv - .5) * 2.;
       float r = length(p);
-      float edge = exp(-pow((r - .825) / .022, 2.));
-      float inner = exp(-pow((r - .79) / .055, 2.));
+      float edge = gaussian((r - .825) / .022);
+      float inner = gaussian((r - .79) / .055);
       float a = atan(p.y, p.x);
       float streaks = pow(.5 + .5 * sin(a * 18. + sin(a * 7. - uTime * .06)), 8.);
-      float wisps = streaks * exp(-pow((r - .72) / .14, 2.));
+      float wisps = streaks * gaussian((r - .72) / .14);
       float center = exp(-dot(p * vec2(1.0, 1.4), p * vec2(1.0, 1.4)) * 3.7);
       vec3 color = vec3(.06, .19, .15) * (inner * .15 + wisps * .07 + center * .025);
       color += vec3(.45, .63, .48) * edge * (.26 + uCharge * .3 + uScatter * .16 + uActivity.x * .45);
@@ -594,7 +596,7 @@ export function createWorldEnvironment(THREE, scene) {
       float drift = uTime * .001;
       vec2 current = vec2(noise(p * 5. + drift), noise(p * 6. - drift + 17.));
       float field = noise(p * 8. + current * 1.1 + drift) * .63 + noise(p * 19. + current * .8 - drift) * .27 + noise(p * 41.) * .10;
-      float band = exp(-pow((p.y - .40 - p.x * .13 + field * .10) / .105, 2.));
+      float band = gaussian((p.y - .40 - p.x * .13 + field * .10) / .105);
       float filament = pow(1. - abs(sin(field * 13. + p.x * 5. - p.y * 8.)), 12.) * band;
       float glow = exp(-dot((p - vec2(.51, .40)) * vec2(3.1, 4.5), (p - vec2(.51, .40)) * vec2(3.1, 4.5)));
       float edge = smoothstep(0., .13, p.x) * (1. - smoothstep(.84, 1., p.x))

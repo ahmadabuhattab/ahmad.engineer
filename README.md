@@ -31,6 +31,15 @@ Run the build before previewing. It regenerates the ignored `public/card/` asset
 
 The share preview is `public/og-portfolio-2026.jpg` (1200 × 630). Hero artwork is served responsively: `public/observatory-gravity-2026.jpg` on desktop and `public/observatory-gravity-mobile-2026.jpg` on phones. These images are rendered from the actual portfolio scenes and appear before interactive rendering starts.
 
+## Mobile verification: September 12, 2026
+
+- Touch devices use native, immediate document anchor navigation. This fixes a reproduced WebKit case where the footer's return link stopped halfway up the page during a long smooth scroll. Desktop smooth navigation remains available.
+- Contact, footer, and gallery return actions have at least 44px touch areas. All 144 tested edge taps passed at 320, 390, and 430px widths, including 200% text enlargement.
+- Very short viewports use the scrollable observatory layout. Native swipes can scroll over the scene, reopening restores the top controls, and cinematic mode retains camera gestures. Layout checks at 320–844px, including 568×320 and 667×300 landscape, show no overlapping controls or horizontal overflow.
+- Two-finger gestures zoom the immersive camera without rotating it or selecting a landmark. Lifting one finger rebases the remaining drag. Renderer loss freezes the event timeline, and restoration resumes from the same progress.
+- Coarse-pointer devices retain their mobile rendering budget through rotation. Shader Gaussian functions use defined arithmetic on mobile GPUs. Both orientation orders, context restoration, and HDR frames were checked with no rendering errors; the renderer remains idle at the footer.
+- WebKit checks at 320, 390, and 844px cover the actual WebGL view, footer return navigation, and gallery anchors. These browser/device emulations supplement Chrome touch checks; they are not measurements on physical phones.
+
 ## Spacetime verification: September 10, 2026
 
 - Production build passes. The complete five-phase sequence, repeat activation, B/0–3 shortcuts, pause, page visibility, cancellation, capture, close/reopen, and the data-saving Canvas fallback were checked with no browser errors.

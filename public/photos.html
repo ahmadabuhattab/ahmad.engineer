@@ -540,6 +540,24 @@
 
         }
 
+        @media (max-width: 768px), (pointer: coarse) {
+            .gallery-nav .logo,
+            .gallery-footer-link a {
+                display: inline-flex;
+                align-items: center;
+                min-width: 44px;
+                min-height: 44px;
+                max-width: 100%;
+                padding-block: 8px;
+                overflow-wrap: anywhere;
+            }
+
+            .gallery-footer-link a {
+                scroll-margin-top: calc(var(--gallery-nav-height) + 20px);
+                scroll-margin-bottom: 24px;
+            }
+        }
+
         @media (prefers-reduced-motion: reduce) {
             html {
                 scroll-behavior: auto;

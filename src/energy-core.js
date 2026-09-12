@@ -17,12 +17,15 @@ function initializeArmillary(host, canvas) {
   // Fallback artwork is present in the HTML, including before scripts load.
 
   const smallScreen = window.matchMedia('(max-width: 760px)');
+  const coarsePointer = window.matchMedia('(pointer: coarse)');
+  // Rotating a phone should change its composition, not raise its GPU budget.
+  const mobileBudget = () => smallScreen.matches || coarsePointer.matches;
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   let renderer;
   try {
     renderer = new THREE.WebGLRenderer({
       canvas, alpha: true, antialias: true, stencil: false,
-      powerPreference: smallScreen.matches ? 'low-power' : 'high-performance',
+      powerPreference: mobileBudget() ? 'low-power' : 'high-performance',
     });
   } catch {
     host.dataset.render = 'fallback';
@@ -30,7 +33,7 @@ function initializeArmillary(host, canvas) {
   }
 
   renderer.setClearColor(0x030a0e, 1);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, smallScreen.matches ? 1.25 : 1.6));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, mobileBudget() ? 1.25 : 1.6));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.18;
@@ -72,7 +75,7 @@ function initializeArmillary(host, canvas) {
   scene.environmentRotation.y = .65;
   const world = createWorldEnvironment(THREE, scene);
   const singularity = createWorldSingularity(THREE, scene);
-  const cinematic = createWorldCinematic(renderer, scene, camera, smallScreen.matches);
+  const cinematic = createWorldCinematic(renderer, scene, camera, mobileBudget());
 
   const glowTexture = retain(makeGlowTexture());
   function glow(color, scale, opacity = 0.4) {
@@ -260,7 +263,7 @@ function initializeArmillary(host, canvas) {
   const random = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
   const dustPositions = [];
   const dustColors = [];
-  const dustCount = smallScreen.matches ? 140 : 290;
+  const dustCount = mobileBudget() ? 140 : 290;
   for (let index = 0; index < dustCount; index++) {
     const azimuth = random() * Math.PI * 2;
     const height = random() * 2 - 1;
@@ -635,7 +638,7 @@ function initializeArmillary(host, canvas) {
   function tick(timestamp) {
     frameId = 0;
     if (!canAnimate()) return;
-    const minimumInterval = smallScreen.matches ? 1000 / 30 : 1000 / 45;
+    const minimumInterval = mobileBudget() ? 1000 / 30 : 1000 / 45;
     const deltaMs = timestamp - lastFrame;
     if (deltaMs >= minimumInterval) {
       const remainder = deltaMs % minimumInterval;
@@ -661,7 +664,7 @@ function initializeArmillary(host, canvas) {
     if (!width || !height) return;
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, smallScreen.matches ? 1.25 : 1.6));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, mobileBudget() ? 1.25 : 1.6));
     renderer.setSize(width, height, false);
     cinematic.resize(width, height, renderer.getPixelRatio());
     render();
@@ -688,6 +691,7 @@ function initializeArmillary(host, canvas) {
     syncAnimation();
   }
   function onWorldView(event) {
+    cancelSceneTap();
     hoverLandmark(null);
     immersive = event.detail?.active === true;
     realm = Object.hasOwn(views, event.detail?.realm) ? event.detail.realm : 'overview';
@@ -730,6 +734,7 @@ function initializeArmillary(host, canvas) {
   }
   function onContextLost(event) {
     event.preventDefault();
+    cancelSceneTap();
     contextLost = true;
     host.dataset.render = 'fallback';
     syncAnimation();
@@ -766,6 +771,7 @@ function initializeArmillary(host, canvas) {
   canvas.addEventListener('pointermove', onSceneMove);
   canvas.addEventListener('pointerup', onSceneUp);
   canvas.addEventListener('pointercancel', cancelSceneTap);
+  canvas.addEventListener('lostpointercapture', cancelSceneTap);
   canvas.addEventListener('pointerleave', leaveScene);
   reducedMotion.addEventListener('change', syncAnimation);
   canvas.addEventListener('webglcontextlost', onContextLost);
@@ -794,6 +800,7 @@ function initializeArmillary(host, canvas) {
     canvas.removeEventListener('pointermove', onSceneMove);
     canvas.removeEventListener('pointerup', onSceneUp);
     canvas.removeEventListener('pointercancel', cancelSceneTap);
+    canvas.removeEventListener('lostpointercapture', cancelSceneTap);
     canvas.removeEventListener('pointerleave', leaveScene);
     reducedMotion.removeEventListener('change', syncAnimation);
     canvas.removeEventListener('webglcontextlost', onContextLost);
