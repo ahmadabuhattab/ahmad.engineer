@@ -1,6 +1,6 @@
 import { sampleCycle, CYCLE_DURATION, BURST_START } from './energy-cycle.js';
 import { sampleSpacetime } from './world-spacetime.js';
-import { createFieldCoordinates } from './world-field-lab.js';
+import { createFieldCoordinates, createFieldColors } from './world-field-lab.js';
 
 // A real geometry renderer for small screens. Every shard has a permanent home:
 // the same continuous displacement carries it out into space and back again.
@@ -16,9 +16,9 @@ function initializeMobileEnergy(host, canvas) {
   const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
   const TAU = Math.PI * 2;
   const rings = [
-    { radius: 1.09, tilt: [1.07, 0.13, -0.38], speed: 0.073, color: [185, 185, 185] },
-    { radius: 0.94, tilt: [0.15, 1.12, 0.31], speed: -0.095, color: [235, 235, 235] },
-    { radius: 0.79, tilt: [0.81, -0.57, 0.73], speed: 0.112, color: [207, 207, 207] },
+    { radius: 1.09, tilt: [1.07, 0.13, -0.38], speed: 0.073, color: [220, 195, 145] },
+    { radius: 0.94, tilt: [0.15, 1.12, 0.31], speed: -0.095, color: [167, 223, 207] },
+    { radius: 0.79, tilt: [0.81, -0.57, 0.73], speed: 0.112, color: [231, 206, 156] },
   ];
   let seed = 73129;
   const random = () => {
@@ -98,7 +98,7 @@ function initializeMobileEnergy(host, canvas) {
     sprite.width = sprite.height = 64;
     const painter = sprite.getContext('2d');
     const gradient = painter.createRadialGradient(32, 32, 0, 32, 32, 32);
-    gradient.addColorStop(0, 'rgba(248,248,248,.82)');
+    gradient.addColorStop(0, 'rgba(255,249,229,.92)');
     gradient.addColorStop(0.11, rgba(color, 0.64));
     gradient.addColorStop(0.36, rgba(color, 0.12));
     gradient.addColorStop(1, rgba(color, 0));
@@ -106,16 +106,16 @@ function initializeMobileEnergy(host, canvas) {
     painter.fillRect(0, 0, 64, 64);
     return sprite;
   }
-  const warmGlow = makeGlow([201, 201, 201]);
-  const coolGlow = makeGlow([226, 226, 226]);
-  const furnaceGlow = makeGlow([189, 189, 189]);
+  const warmGlow = makeGlow([247, 207, 132]);
+  const coolGlow = makeGlow([149, 228, 212]);
+  const furnaceGlow = makeGlow([255, 132, 49]);
   const smokeSprite = document.createElement('canvas');
   smokeSprite.width = smokeSprite.height = 64;
   const smokePainter = smokeSprite.getContext('2d');
   const smokeGradient = smokePainter.createRadialGradient(32, 32, 0, 32, 32, 32);
-  smokeGradient.addColorStop(0, 'rgba(130,130,130,.35)');
-  smokeGradient.addColorStop(0.45, 'rgba(88,88,88,.18)');
-  smokeGradient.addColorStop(1, 'rgba(71,71,71,0)');
+  smokeGradient.addColorStop(0, 'rgba(121,133,130,.35)');
+  smokeGradient.addColorStop(0.45, 'rgba(72,94,96,.18)');
+  smokeGradient.addColorStop(1, 'rgba(49,77,82,0)');
   smokePainter.fillStyle = smokeGradient;
   smokePainter.fillRect(0, 0, 64, 64);
 
@@ -213,6 +213,16 @@ function initializeMobileEnergy(host, canvas) {
   // copying hundreds of coordinates or allocating buffers on every frame.
   const fieldCount = 720;
   const fieldCoordinates = createFieldCoordinates(fieldCount);
+  const fieldColors = createFieldColors(fieldCoordinates);
+  // Canvas consumes sRGB values; WebGL keeps the same palette in linear RGB.
+  for (const values of Object.values(fieldColors)) {
+    for (let index = 0; index < values.length; index++) {
+      const linear = values[index];
+      values[index] = Math.round(255 * (linear <= .0031308 ? linear * 12.92 : 1.055 * linear ** (1 / 2.4) - .055));
+    }
+  }
+  const fieldColor = new Float32Array(3);
+  const fieldGlow = [coolGlow, warmGlow, makeGlow([178, 119, 247])];
   const fieldForms = ['sphere', 'knot', 'helix'];
   let fieldActive = worldActive && host.dataset.lab === 'true';
   let fieldTarget = Math.max(0, fieldForms.indexOf(host.dataset.labForm));
@@ -238,15 +248,17 @@ function initializeMobileEnergy(host, canvas) {
     const portrait = width < height;
     const centerX = width * .5, centerY = height * (portrait ? .38 : .47);
     const unit = Math.min(width, height) * .164 * (1 + orbit.zoom * .3);
-    context.fillStyle = '#070707';
+    context.fillStyle = '#060b10';
     context.fillRect(0, 0, width, height);
     const auraSize = Math.min(width, height) * .78;
-    context.globalAlpha = .09;
-    context.drawImage(coolGlow, centerX - auraSize, centerY - auraSize, auraSize * 2, auraSize * 2);
+    for (let form = 0; form < 3; form++) {
+      context.globalAlpha = .09 * fieldWeights[form];
+      if (fieldWeights[form] > .001) context.drawImage(fieldGlow[form], centerX - auraSize, centerY - auraSize, auraSize * 2, auraSize * 2);
+    }
     context.globalAlpha = 1;
 
     // Sparse stationary reference marks make orbital depth easy to read.
-    context.strokeStyle = 'rgba(175,175,175,.07)';
+    context.strokeStyle = 'rgba(133,184,192,.07)';
     context.lineWidth = .6;
     context.beginPath();
     const gridY = centerY + unit * 2.9;
@@ -263,7 +275,7 @@ function initializeMobileEnergy(host, canvas) {
       const star = stars[index];
       const x = width * (.5 + star.x) + orbit.x * 7 / star.depth;
       const y = height * (.5 + star.y) + orbit.y * 7 / star.depth;
-      context.fillStyle = rgba([210, 210, 210], .13 + .08 * Math.sin(elapsed * .12 + star.phase));
+      context.fillStyle = rgba([187, 213, 231], .13 + .08 * Math.sin(elapsed * .12 + star.phase));
       context.fillRect(x, y, .75, .75);
     }
 
@@ -285,7 +297,11 @@ function initializeMobileEnergy(host, canvas) {
       fieldProjection[at + 2] = bz;
       fieldProjection[at + 3] = perspective;
     }
-    context.strokeStyle = 'rgba(210,210,210,.13)';
+    const middle = Math.floor(fieldCount / 2) * 3;
+    for (let channel = 0; channel < 3; channel++) {
+      fieldColor[channel] = fieldColors.sphere[middle + channel] * fieldWeights[0] + fieldColors.knot[middle + channel] * fieldWeights[1] + fieldColors.helix[middle + channel] * fieldWeights[2];
+    }
+    context.strokeStyle = rgba(fieldColor, .13);
     context.lineWidth = .55;
     context.beginPath();
     const lineEnd = fieldWeights[2] > .01 ? Math.floor(fieldCount * .82) : fieldCount;
@@ -303,14 +319,20 @@ function initializeMobileEnergy(host, canvas) {
       const depth = finiteClamp((fieldProjection[at + 2] + 2.6) / 5.2, 0, 1);
       const pulse = Math.max(0, Math.sin(index * 2.17 + elapsed * .47)) ** 18;
       const radius = (.48 + (index % 7) * .055) * fieldProjection[at + 3];
-      context.fillStyle = rgba([238, 238, 238], .3 + depth * .55 + pulse * .13);
+      const colorOffset = index * 3;
+      for (let channel = 0; channel < 3; channel++) {
+        fieldColor[channel] = fieldColors.sphere[colorOffset + channel] * fieldWeights[0] + fieldColors.knot[colorOffset + channel] * fieldWeights[1] + fieldColors.helix[colorOffset + channel] * fieldWeights[2];
+      }
+      context.fillStyle = rgba(fieldColor, .3 + depth * .55 + pulse * .13);
       context.beginPath();
       context.arc(fieldProjection[at], fieldProjection[at + 1], radius, 0, TAU);
       context.fill();
       if (index % 31 === 0) {
         const size = (3.5 + pulse * 5) * fieldProjection[at + 3];
-        context.globalAlpha = .18 + pulse * .32;
-        context.drawImage(coolGlow, fieldProjection[at] - size, fieldProjection[at + 1] - size, size * 2, size * 2);
+        for (let form = 0; form < 3; form++) {
+          context.globalAlpha = (.18 + pulse * .32) * fieldWeights[form];
+          if (fieldWeights[form] > .001) context.drawImage(fieldGlow[form], fieldProjection[at] - size, fieldProjection[at + 1] - size, size * 2, size * 2);
+        }
       }
       context.globalAlpha = 1;
     }
@@ -365,12 +387,12 @@ function initializeMobileEnergy(host, canvas) {
     };
     const paintQueue = [];
 
-    const teal = [222, 222, 222];
-    const bronze = [183, 183, 183];
+    const teal = [117, 210, 202];
+    const bronze = [226, 177, 111];
     const sky = context.createLinearGradient(0, 0, 0, height);
-    sky.addColorStop(0, 'rgba(7,7,7,.96)');
-    sky.addColorStop(0.52, 'rgba(13,13,13,.85)');
-    sky.addColorStop(1, 'rgba(8,8,8,.97)');
+    sky.addColorStop(0, 'rgba(4,10,15,.96)');
+    sky.addColorStop(0.52, 'rgba(5,19,21,.85)');
+    sky.addColorStop(1, 'rgba(5,12,13,.97)');
     context.fillStyle = sky;
     context.fillRect(0, 0, width, height);
     const atmosphere = Math.max(width, height) * 0.85;
@@ -399,7 +421,7 @@ function initializeMobileEnergy(host, canvas) {
         context.lineWidth = star.size * 0.6;
         context.stroke();
       }
-      context.fillStyle = rgba(star.phase > Math.PI ? teal : [232, 232, 232], alpha);
+      context.fillStyle = rgba(star.phase > Math.PI ? teal : [242, 229, 200], alpha);
       context.fillRect(point.x, point.y, star.size, star.size);
       if (star.size > 1.5) {
         context.globalAlpha = 0.22;
@@ -442,7 +464,7 @@ function initializeMobileEnergy(host, canvas) {
       });
       path(points, true);
       if (filled) {
-        context.fillStyle = 'rgba(19,19,19,.88)';
+        context.fillStyle = 'rgba(9,24,27,.88)';
         context.fill();
       }
       context.strokeStyle = rgba(color, opacity);
@@ -462,9 +484,9 @@ function initializeMobileEnergy(host, canvas) {
         { x: x + halfWidth, y: top, z: z + halfDepth },
         { x: x - halfWidth, y: top, z: z + halfDepth },
       ];
-      const faceColors = distant ? [[19, 19, 19], [16, 16, 16], [26, 26, 26]]
-        : color === bronze ? [[36, 36, 36], [24, 24, 24], [50, 50, 50]]
-          : [[42, 42, 42], [28, 28, 28], [60, 60, 60]];
+      const faceColors = distant ? [[9, 18, 22], [8, 19, 22], [11, 24, 27]]
+        : color === bronze ? [[31, 31, 28], [21, 24, 24], [43, 40, 31]]
+          : [[18, 38, 40], [12, 26, 32], [24, 51, 51]];
       const faces = [
         { indices: [0, 1, 5, 4], tone: 1 }, { indices: [1, 2, 6, 5], tone: 1 },
         { indices: [0, 3, 7, 4], tone: 1 }, { indices: [3, 2, 6, 7], tone: 0 },
@@ -492,7 +514,7 @@ function initializeMobileEnergy(host, canvas) {
       { x: 12, y: 1.57, z: 4 }, { x: -12, y: 1.57, z: 4 },
     ].map(project);
     path(floor, true);
-    context.fillStyle = 'rgba(12,12,12,.72)';
+    context.fillStyle = 'rgba(4,17,19,.72)';
     context.fill();
     for (let x = -9; x <= 9; x++) {
       worldLine([{ x, y: 1.55, z: -12 }, { x, y: 1.55, z: 3.7 }], teal, 0.1, 0.65);
@@ -517,7 +539,7 @@ function initializeMobileEnergy(host, canvas) {
       worldFace([
         portalPoint(start, 2.44), portalPoint(end, 2.44),
         portalPoint(end, 2.29), portalPoint(start, 2.29),
-      ], [42, 42, 42], color, 0.83, 0.24 + heat * 0.1);
+      ], [18, 39, 40], color, 0.83, 0.24 + heat * 0.1);
       worldLine([portalPoint(start, 2.47), portalPoint(start, segment % 4 === 0 ? 2.62 : 2.53)], color, 0.28, 0.7, true);
     }
     worldLine([
@@ -602,12 +624,12 @@ function initializeMobileEnergy(host, canvas) {
           z: start.z + (end.z - start.z) * t,
         });
         const head = project(along(progress));
-        worldLine([along(Math.max(0, progress - 0.17)), along(progress)], [245, 245, 245], signalStrength * 0.86, 1.25, true);
+        worldLine([along(Math.max(0, progress - 0.17)), along(progress)], [177, 255, 243], signalStrength * 0.86, 1.25, true);
         paintQueue.push({ z: head.z + 0.001, paint() {
           const size = Math.max(5, unit * 0.09 * head.scale);
           context.globalAlpha = signalStrength * 0.88;
           context.drawImage(coolGlow, head.x - size, head.y - size, size * 2, size * 2);
-          context.fillStyle = '#f7f7f7';
+          context.fillStyle = '#d7fff7';
           context.fillRect(head.x - 1, head.y - 1, 2, 2);
           context.globalAlpha = 1;
         } });
@@ -623,7 +645,7 @@ function initializeMobileEnergy(host, canvas) {
           context.globalAlpha = 0.65 + signalStrength * 0.25;
           context.drawImage(coolGlow, point.x - glow, point.y - glow, glow * 2, glow * 2);
           context.globalAlpha = 1;
-          context.fillStyle = '#eeeeee';
+          context.fillStyle = '#bff9ed';
           context.fillRect(point.x - size / 2, point.y - size / 2, size, size);
         },
       });
@@ -638,8 +660,8 @@ function initializeMobileEnergy(host, canvas) {
     });
     for (let index = 2; index < 6; index++) {
       const next = index === 5 ? 2 : index + 1;
-      worldFace([crystal[0], crystal[index], crystal[next]], [107 + signalStrength * 40, 107 + signalStrength * 40, 107 + signalStrength * 40], teal, 0.68, 0.72);
-      worldFace([crystal[1], crystal[next], crystal[index]], [40, 40, 40], teal, 0.9, 0.5);
+      worldFace([crystal[0], crystal[index], crystal[next]], [53, 108 + signalStrength * 47, 109 + signalStrength * 41], teal, 0.68, 0.72);
+      worldFace([crystal[1], crystal[next], crystal[index]], [16, 44, 51], teal, 0.9, 0.5);
     }
 
     floorRing(2.8, -0.6, 1.05, 1.49, bronze, 0.32, true);
@@ -666,15 +688,15 @@ function initializeMobileEnergy(host, canvas) {
     ], bronze, 0.57, 1.2, true);
 
     // The foundry has a physical furnace, a working belt and buoyant exhaust.
-    const ember = [200, 200, 200];
+    const ember = [255, 153, 67];
     worldFace([
       { x: 2.1, y: 1.26, z: 0.32 }, { x: 3.65, y: 1.26, z: 0.32 },
       { x: 3.65, y: 1.26, z: 0.57 }, { x: 2.1, y: 1.26, z: 0.57 },
-    ], [28, 28, 28], bronze, 1, 0.65);
+    ], [19, 28, 28], bronze, 1, 0.65);
     worldFace([
       { x: 2.1, y: 1.26, z: 0.57 }, { x: 3.65, y: 1.26, z: 0.57 },
       { x: 3.65, y: 1.37, z: 0.57 }, { x: 2.1, y: 1.37, z: 0.57 },
-    ], [33, 33, 33], bronze, 1, 0.45);
+    ], [26, 31, 28], bronze, 1, 0.45);
     for (let roller = 0; roller < 12; roller++) {
       const x = 2.14 + roller * 0.13;
       worldLine([{ x, y: 1.255, z: 0.34 }, { x, y: 1.255, z: 0.55 }], bronze, 0.33, 0.7, true);
@@ -686,7 +708,7 @@ function initializeMobileEnergy(host, canvas) {
       const progress = fraction(ingot / 5 + activities.forge.time * 0.15);
       const x = 2.17 + progress * 1.35;
       const hot = forge * (1 - progress * 0.65);
-      const color = [58 + hot * 105, 58 + hot * 105, 58 + hot * 105];
+      const color = [61 + hot * 181, 55 + hot * 87, 36 + hot * 17];
       worldFace([
         { x, y: 1.18, z: 0.39 }, { x: x + 0.12, y: 1.18, z: 0.39 },
         { x: x + 0.12, y: 1.18, z: 0.51 }, { x, y: 1.18, z: 0.51 },
@@ -701,7 +723,7 @@ function initializeMobileEnergy(host, canvas) {
       { x: 2.33, y: 0.74, z: 0.295 }, { x: 2.67, y: 0.74, z: 0.295 },
       { x: 2.76, y: 0.84, z: 0.295 }, { x: 2.76, y: 1.25, z: 0.295 },
     ];
-    worldFace(furnace, [34, 34, 34], bronze, 1, 0.75);
+    worldFace(furnace, [31, 31, 26], bronze, 1, 0.75);
     const mouth = [
       { x: 2.32, y: 1.22, z: 0.3 }, { x: 2.32, y: 0.92, z: 0.3 },
       { x: 2.39, y: 0.85, z: 0.3 }, { x: 2.61, y: 0.85, z: 0.3 },
@@ -711,7 +733,7 @@ function initializeMobileEnergy(host, canvas) {
     // The inset follows its facade's paint depth, even when looking down at it.
     paintQueue.push({ z: furnaceDepth + 0.002, paint() {
       path(mouth.map(project), true);
-      context.fillStyle = rgba([24 + forge * 108, 24 + forge * 108, 24 + forge * 108], 1);
+      context.fillStyle = rgba([24 + forge * 192, 20 + forge * 82, 14 + forge * 19], 1);
       context.fill();
       context.strokeStyle = rgba(ember, 0.28 + forge * 0.65);
       context.lineWidth = 0.8;
@@ -766,14 +788,14 @@ function initializeMobileEnergy(host, canvas) {
           context.drawImage(particle.phase > Math.PI ? warmGlow : coolGlow,
             point.x - glow, point.y - glow, glow * 2, glow * 2);
         }
-        context.fillStyle = '#dedede';
+        context.fillStyle = '#d1e4d8';
         context.fillRect(point.x, point.y, size, size);
         if (arrival > 0.01) {
           context.beginPath();
           context.moveTo(point.x, point.y);
           context.lineTo(point.x - (point.x - screenCenterX) * arrival * 0.08,
             point.y - (point.y - screenCenterY) * arrival * 0.08);
-          context.strokeStyle = '#d6d6d6';
+          context.strokeStyle = '#9bdad0';
           context.lineWidth = size * 0.5;
           context.stroke();
         }
@@ -881,10 +903,10 @@ function initializeMobileEnergy(host, canvas) {
             centerX - coreSize * 0.31, centerY - coreSize * 0.34, coreSize * 0.03,
             centerX, centerY, coreSize,
           );
-          gradient.addColorStop(0, '#f5f5f5');
-          gradient.addColorStop(0.48, '#a6a6a6');
-          gradient.addColorStop(0.88, '#454545');
-          gradient.addColorStop(1, '#cacaca');
+          gradient.addColorStop(0, '#fff9df');
+          gradient.addColorStop(0.48, '#efdfb3');
+          gradient.addColorStop(0.88, '#c3ad75');
+          gradient.addColorStop(1, '#e6dbb7');
           context.fillStyle = gradient;
           context.beginPath();
           context.arc(centerX, centerY, coreSize, 0, TAU);
@@ -917,10 +939,10 @@ function initializeMobileEnergy(host, canvas) {
           path(points, true);
           const facing = Math.min(1, Math.max(0, (z - origin.z) / (0.255 * (1 + scatter * 4)) * 0.5 + 0.5));
           const brightness = facet.light * (0.64 + facing * 0.36);
-          const color = [Math.round(226 * brightness), Math.round(226 * brightness), Math.round(226 * brightness)];
+          const color = [Math.round(247 * brightness), Math.round(229 * brightness), Math.round(179 * brightness)];
           context.fillStyle = rgba(color, 0.12 + scatter * 0.81);
           context.fill();
-          context.strokeStyle = rgba([242, 242, 242], (0.075 + heat * 0.12 + scatter * 0.25) * facing);
+          context.strokeStyle = rgba([255, 241, 196], (0.075 + heat * 0.12 + scatter * 0.25) * facing);
           context.lineWidth = 0.45 + scatter * 0.25;
           context.stroke();
         },
@@ -959,7 +981,7 @@ function initializeMobileEnergy(host, canvas) {
             context.drawImage(particle.ring === rings[1] ? coolGlow : warmGlow,
               point.x - extent, point.y - extent, extent * 2, extent * 2);
           }
-          context.fillStyle = '#f4f4f4';
+          context.fillStyle = '#fff4d5';
           context.beginPath();
           context.arc(point.x, point.y, size * 0.62, 0, TAU);
           context.fill();
@@ -988,7 +1010,7 @@ function initializeMobileEnergy(host, canvas) {
       context.globalCompositeOperation = 'source-over';
       if (spacetime.collapse > .6) {
         context.beginPath(); context.arc(0, 0, extent * .22 * spacetime.collapse, 0, TAU);
-        context.fillStyle = '#030303'; context.fill();
+        context.fillStyle = '#020607'; context.fill();
       }
       context.restore();
     }

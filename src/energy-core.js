@@ -33,11 +33,11 @@ function initializeArmillary(host, canvas) {
     return;
   }
 
-  renderer.setClearColor(0x050505, 1);
+  renderer.setClearColor(0x030a0e, 1);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, mobileBudget() ? 1.25 : 1.6));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.08;
+  renderer.toneMappingExposure = 1.18;
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 140);
@@ -46,17 +46,17 @@ function initializeArmillary(host, canvas) {
   scene.add(instrument);
   const resources = new Set();
   const retain = resource => { resources.add(resource); return resource; };
-  const gold = new THREE.Color('#bcbcbc');
-  const ice = new THREE.Color('#eeeeee');
+  const gold = new THREE.Color('#dbc392');
+  const ice = new THREE.Color('#c5e3d7');
 
-  scene.add(new THREE.HemisphereLight(0xffffff, 0x141414, 1.65));
-  const key = new THREE.DirectionalLight(0xffffff, 4.3);
+  scene.add(new THREE.HemisphereLight(0xe9e7cf, 0x072923, 2));
+  const key = new THREE.DirectionalLight(0xfff1d4, 4.5);
   key.position.set(-3, 4, 5);
   scene.add(key);
-  const rim = new THREE.DirectionalLight(0xffffff, 2.0);
+  const rim = new THREE.DirectionalLight(0xa3d5cd, 2.4);
   rim.position.set(3, -2, -2);
   scene.add(rim);
-  const heartLight = new THREE.PointLight(0xffffff, 9, 9, 2);
+  const heartLight = new THREE.PointLight(0xffbf73, 13, 9, 2);
   heartLight.position.set(0, 0, 0.45);
   scene.add(heartLight);
   // A locally generated reflection environment gives metals readable faces
@@ -72,7 +72,7 @@ function initializeArmillary(host, canvas) {
     pmrem.dispose();
   }
   regenerateReflections();
-  scene.environmentIntensity = .45;
+  scene.environmentIntensity = .38;
   scene.environmentRotation.y = .65;
   const world = createWorldEnvironment(THREE, scene);
   const singularity = createWorldSingularity(THREE, scene);
@@ -91,9 +91,9 @@ function initializeArmillary(host, canvas) {
     return sprite;
   }
 
-  const halo = glow(0xbcbcbc, 6.2, 0.3);
+  const halo = glow(0xe7bc78, 6.2, 0.5);
   instrument.add(halo);
-  const innerGlow = glow(0xe8e8e8, 2.75, 0.28);
+  const innerGlow = glow(0xffdfab, 2.75, 0.56);
   instrument.add(innerGlow);
 
   const nucleusMaterial = retain(new THREE.ShaderMaterial({
@@ -136,13 +136,11 @@ function initializeArmillary(host, canvas) {
         float filaments = pow(1. - abs(sin(p.y * 2.1 + n * 8. + p.x * .8)), 7.);
         float facing = clamp(dot(normalize(vNormal), normalize(vView)), 0., 1.);
         float edge = pow(1. - facing, 2.1);
-        vec3 lightDirection = normalize(vec3(-.5,.8,1.));
-        float light = .24 + .56 * max(dot(normalize(vNormal), lightDirection), 0.);
-        float polished = pow(max(dot(reflect(-lightDirection, normalize(vNormal)), normalize(vView)), 0.), 32.);
-        vec3 graphite = vec3(.18);
-        vec3 silver = vec3(.88);
-        vec3 color = mix(graphite, silver, n * .8 + .22) * light;
-        color += silver * (filaments * (.30 + uHeat * .7) + edge * .72 + polished * .9);
+        float light = .60 + .40 * max(dot(normalize(vNormal), normalize(vec3(-.5,.8,1.))), 0.);
+        vec3 amber = vec3(1.0, .57, .19);
+        vec3 ivory = vec3(1.0, .94, .71);
+        vec3 color = mix(amber, ivory, n * .8 + .22) * light;
+        color += ivory * (filaments * (.45 + uHeat * .8) + edge * .95);
         gl_FragColor = vec4(color, 1.0);
         #include <tonemapping_fragment>
         #include <colorspace_fragment>
@@ -153,18 +151,18 @@ function initializeArmillary(host, canvas) {
   instrument.add(nucleus);
 
   const metal = retain(new THREE.MeshStandardMaterial({
-    color: 0x888888, metalness: 0.94, roughness: 0.24,
-    emissive: 0x262626, emissiveIntensity: 0.13,
+    color: 0x9f947b, metalness: 0.82, roughness: 0.31,
+    emissive: 0x493318, emissiveIntensity: 0.13,
     side: THREE.DoubleSide,
   }));
   const coolMetal = retain(new THREE.MeshStandardMaterial({
-    color: 0xc2c2c2, metalness: 0.96, roughness: 0.18,
-    emissive: 0x171717, emissiveIntensity: 0.12,
+    color: 0x91b4a7, metalness: 0.76, roughness: 0.28,
+    emissive: 0x20382f, emissiveIntensity: 0.12,
     side: THREE.DoubleSide,
   }));
   const warmTrace = retain(new THREE.MeshBasicMaterial({ color: gold, transparent: true, opacity: 0.75, toneMapped: false }));
   const coolTrace = retain(new THREE.MeshBasicMaterial({ color: ice, transparent: true, opacity: 0.58, toneMapped: false }));
-  const beadMaterial = retain(new THREE.MeshBasicMaterial({ color: 0xf4f4f4, toneMapped: false }));
+  const beadMaterial = retain(new THREE.MeshBasicMaterial({ color: 0xffefd4, toneMapped: false }));
   const beadGeometry = retain(new THREE.SphereGeometry(0.033, 10, 8));
   const orbits = [];
   const transform = new THREE.Object3D();
@@ -228,7 +226,7 @@ function initializeArmillary(host, canvas) {
     const bead = new THREE.Mesh(beadGeometry, beadMaterial);
     bead.position.set(radius, 0, 0.035);
     details.add(bead);
-    const beadGlow = glow(cool ? 0xeeeeee : 0xd2d2d2, 0.43, 0.73);
+    const beadGlow = glow(cool ? 0xb9eadc : 0xffdbae, 0.43, 0.83);
     beadGlow.position.copy(bead.position);
     details.add(beadGlow);
     orbits.push({ rotor, frame, tilt, band, pieces, details, speed, phase });
@@ -239,10 +237,10 @@ function initializeArmillary(host, canvas) {
   makeOrbit({ radius: 1.78, width: 0.046, tilt: [1.04, -0.65, 0.28], speed: 0.073, phase: -0.5 });
 
   const fineMaterial = retain(new THREE.LineBasicMaterial({
-    color: 0xbebebe, transparent: true, opacity: 0.19, depthWrite: false,
+    color: 0xadc8b8, transparent: true, opacity: 0.19, depthWrite: false,
   }));
   const innerMaterial = retain(new THREE.LineBasicMaterial({
-    color: 0xd6d6d6, transparent: true, opacity: 0.29, depthWrite: false,
+    color: 0xf5d6a4, transparent: true, opacity: 0.29, depthWrite: false,
   }));
   function lineOrbit(radius, tilt, material, start = 0, arc = Math.PI * 2) {
     const points = [];
@@ -293,8 +291,8 @@ function initializeArmillary(host, canvas) {
   const shardCount = 112;
   const shardGeometry = retain(new THREE.OctahedronGeometry(.082, 0));
   const shardMaterial = retain(new THREE.MeshStandardMaterial({
-    color: 0xd9d9d9, metalness: .91, roughness: .2,
-    emissive: 0x939393, emissiveIntensity: .28,
+    color: 0xffe8b8, metalness: .55, roughness: .22,
+    emissive: 0xf4a84b, emissiveIntensity: .45,
   }));
   const shards = retain(new THREE.InstancedMesh(shardGeometry, shardMaterial, shardCount));
   shards.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
@@ -350,7 +348,7 @@ function initializeArmillary(host, canvas) {
         float radius = length(gl_PointCoord - .5) * 2.;
         if (radius > 1.) discard;
         float alpha = exp(-radius * radius * 5.) * vAlpha;
-        vec3 color = mix(vec3(.76), vec3(1.), step(.8, vSeed));
+        vec3 color = mix(vec3(1., .7, .3), vec3(.5, .94, 1.), step(.8, vSeed));
         gl_FragColor = vec4(color, alpha);
       }
     `,
@@ -361,7 +359,7 @@ function initializeArmillary(host, canvas) {
 
   const waves = Array.from({ length: 3 }, (_, i) => {
     const material = retain(new THREE.MeshBasicMaterial({
-      color: i === 1 ? 0xeeeeee : 0xbdbdbd,
+      color: i === 1 ? 0xa3efdd : 0xffd6a0,
       transparent: true, opacity: 0, depthWrite: false,
       side: THREE.DoubleSide, blending: THREE.AdditiveBlending,
     }));
@@ -370,7 +368,7 @@ function initializeArmillary(host, canvas) {
     scene.add(wave);
     return wave;
   });
-  const flare = glow(0xdcdcdc, 1, 0);
+  const flare = glow(0xffd7a0, 1, 0);
   flare.scale.set(8, .12, 1);
   scene.add(flare);
 
@@ -378,7 +376,7 @@ function initializeArmillary(host, canvas) {
   const coronaPoints = new Float32Array(3 * 128 * 6);
   coronaGeometry.setAttribute('position', new THREE.BufferAttribute(coronaPoints, 3).setUsage(THREE.DynamicDrawUsage));
   const coronaMaterial = retain(new THREE.LineBasicMaterial({
-    color: 0xd4d4d4, transparent: true, opacity: .25,
+    color: 0xbee7d4, transparent: true, opacity: .25,
     depthWrite: false, blending: THREE.AdditiveBlending,
   }));
   const corona = new THREE.LineSegments(coronaGeometry, coronaMaterial);
@@ -634,10 +632,10 @@ function initializeArmillary(host, canvas) {
     dust.rotation.z = 0.08;
     dust.scale.setScalar(1 + scatter * .28);
     halo.scale.setScalar(6.2 + scatter * 3.2 - charge * .5);
-    halo.material.opacity = .30 + heat * .24 + Math.sin(elapsed * .75) * .025;
+    halo.material.opacity = .44 + heat * .32 + Math.sin(elapsed * .75) * .035;
     innerGlow.scale.setScalar(2.5 + scatter * 2.1);
-    innerGlow.material.opacity = .28 + charge * .29 + scatter * .10;
-    heartLight.intensity = fieldActive ? 9 : 9 + heat * 9;
+    innerGlow.material.opacity = .48 + charge * .45 + scatter * .13;
+    heartLight.intensity = 13 + heat * 14;
     const started = performance.now();
     lensPosition.set(0, 0, 0).project(camera);
     cinematic.render({ time: elapsed, warp, immersive, heat: fieldActive ? 0 : heat, activity: activity.strength, singularity: spacetime, lensX: lensPosition.x * .5 + .5, lensY: lensPosition.y * .5 + .5 });
@@ -760,7 +758,7 @@ function initializeArmillary(host, canvas) {
   }
   function onContextRestored() {
     contextLost = false;
-    renderer.setClearColor(0x050505, 1);
+    renderer.setClearColor(0x030a0e, 1);
     regenerateReflections();
     resize();
     host.dataset.render = 'webgl';

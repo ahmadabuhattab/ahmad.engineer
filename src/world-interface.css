@@ -154,4 +154,21 @@
   /* The scene shares a scrollable document on short screens and enlarged text. */
   .world-dialog.world-compact:not(.world-cinema) #energyCanvas { touch-action:pan-y pinch-zoom; }
   .world-compact .world-study { flex-wrap:wrap; }
+  @media(max-width:600px) and (orientation:portrait) {
+    .world-dialog .world-info { display:grid; grid-template-columns:minmax(0,1fr) minmax(58px,min-content); grid-template-areas:'eyebrow eyebrow' 'title details' 'study study'; gap:7px 10px; padding:10px 12px; }
+    .world-dialog .world-info-heading { grid-area:eyebrow; }
+    .world-dialog .world-info h2 { grid-area:title; align-self:center; font-size:23px; line-height:1.08; margin:0; overflow-wrap:anywhere; }
+    .world-dialog .world-study { grid-area:study; gap:8px 12px; }
+    .world-dialog #worldExperiment { flex:1; min-height:44px; padding:9px 12px; }
+    .world-dialog .world-info-footer { display:contents; }
+    .world-dialog #worldDetails { grid-area:details; display:block; min-width:44px; min-height:44px; padding:6px 2px; font-size:10px; line-height:1.4; text-align:right; overflow-wrap:normal; }
+    .world-dialog .world-story { grid-area:story; }
+    .world-dialog .world-info-footer #worldChapter { grid-area:chapter; min-height:44px; padding-block:12px; font-size:10px; }
+    .world-dialog:not(.world-details-open) :is(.world-story,#worldChapter,#worldIntensityControl,#worldDiscovered) { display:none; }
+    .world-dialog:not(.world-details-open) .world-info #worldActivityStatus { display:block; position:absolute; width:1px; height:1px; min-height:0; padding:0; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+    .world-dialog.world-details-open .world-info { grid-template-areas:'eyebrow eyebrow' 'title details' 'study study' 'story story' 'chapter chapter'; }
+    .world-dialog.world-details-open .world-info #worldActivityStatus { display:block; }
+    .world-dialog.world-details-open .world-info .world-story p { margin:3px 0; }
+    .world-dialog.world-details-open:not(.world-compact) .world-info { max-height:calc(100dvh - 250px); overflow-y:auto; overscroll-behavior:contain; }
+  }
 }

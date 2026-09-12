@@ -49,12 +49,14 @@ if (dialog && stage && visual && host && canvas && typeof dialog.showModal === '
   const soundButton = document.getElementById('worldSound');
   const fullButton = document.getElementById('worldFullscreen');
   const detailsButton = document.getElementById('worldDetails');
+  const portraitPanel = matchMedia('(max-width: 600px) and (orientation: portrait)');
   const isPaused = () => document.body.classList.contains('motion-paused');
   const rendererReady = () => ['canvas', 'webgl'].includes(host.dataset.render);
   const dispatch = (name, detail) => document.dispatchEvent(new CustomEvent(name, { detail }));
   const updateAudio = () => audio.update({ realm, activity: activityRemaining > 0 ? strength : 0, paused: isPaused(), active });
   function fitLayout() {
     if (!active) return;
+    syncDetailsLabel();
     const titleSize = parseFloat(getComputedStyle(document.getElementById('worldTitle')).fontSize);
     const shortViewport = innerWidth <= 600 ? innerHeight < 540 : innerHeight < 360;
     const shortLab = labActive && (innerWidth <= 600 ? innerHeight < 700 : innerHeight < 460);
@@ -67,6 +69,7 @@ if (dialog && stage && visual && host && canvas && typeof dialog.showModal === '
   const emitOrbit = () => document.dispatchEvent(new CustomEvent('world-orbit', { detail: { ...orbit } }));
   function selectRealm(next, revealStage = true) {
     clearGesture();
+    if (portraitPanel.matches) setDetails(false);
     stopFieldLab();
     stopSpacetime();
     stopActivity();
@@ -79,7 +82,7 @@ if (dialog && stage && visual && host && canvas && typeof dialog.showModal === '
     document.getElementById('worldDescription').textContent = item.copy;
     const link = document.getElementById('worldChapter');
     link.href = item.link;
-    link.textContent = item.action + ' ↗';
+    link.querySelector('[data-world-chapter-label]').textContent = item.action;
     experiment.hidden = false;
     experiment.textContent = item.experiment || 'Enter the field lab';
     experimentStatus.textContent = item.study ? 'An interactive study. Make it come alive.' : 'Touch a landmark to get closer.';
@@ -331,7 +334,7 @@ if (dialog && stage && visual && host && canvas && typeof dialog.showModal === '
     experiment.textContent = 'Return to the observatory';
     experiment.setAttribute('aria-disabled', 'false');
     const link = document.getElementById('worldChapter');
-    link.href = '#field-lab'; link.textContent = 'About this study ↗';
+    link.href = '#field-lab'; link.querySelector('[data-world-chapter-label]').textContent = 'About this study';
     chooseLabForm(form);
     fitLayout();
   }
@@ -431,12 +434,17 @@ if (dialog && stage && visual && host && canvas && typeof dialog.showModal === '
     document.getElementById('worldIntensityValue').textContent = `${event.target.value}%`;
     activateStudy();
   });
-  detailsButton.addEventListener('click', () => {
-    const expanded = detailsButton.getAttribute('aria-expanded') !== 'true';
+  function syncDetailsLabel() {
+    const expanded = detailsButton.getAttribute('aria-expanded') === 'true';
+    detailsButton.textContent = portraitPanel.matches ? (expanded ? 'Close details' : 'Details') : (expanded ? 'Less detail −' : 'Behind the world +');
+    detailsButton.setAttribute('aria-controls', portraitPanel.matches ? 'worldStory worldChapter worldIntensityControl' : 'worldStory');
+  }
+  function setDetails(expanded) {
     detailsButton.setAttribute('aria-expanded', String(expanded));
     dialog.classList.toggle('world-details-open', expanded);
-    detailsButton.textContent = expanded ? 'Less detail −' : 'Behind the world +';
-  });
+    syncDetailsLabel();
+  }
+  detailsButton.addEventListener('click', () => setDetails(detailsButton.getAttribute('aria-expanded') !== 'true'));
   soundButton.addEventListener('click', async () => {
     soundEnabled = await audio.setEnabled(!soundEnabled);
     soundButton.textContent = soundEnabled ? 'Sound on' : 'Sound off';

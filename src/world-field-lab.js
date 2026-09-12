@@ -88,13 +88,35 @@ export function createFieldCoordinates(count) {
   return { sphere, knot, helix };
 }
 
+/** Linear RGB follows each shape's height and contour, without changing its points. */
+export function createFieldColors(coordinates) {
+  const palettes = {
+    sphere: [[.10, .72, .92], [.65, .94, .83]],
+    knot: [[1., .48, .14], [1., .85, .43]],
+    helix: [[.54, .25, .91], [.23, .74, .96]],
+  };
+  const colors = {};
+  for (const form of Object.keys(FORMS)) {
+    const points = coordinates[form];
+    const values = new Float32Array(points.length);
+    const [low, high] = palettes[form];
+    for (let offset = 0; offset < points.length; offset += 3) {
+      const position = clamp((points[offset + 1] + points[offset] * .35 + 2.4) / 4.8, 0, 1);
+      const blend = position * position * (3 - 2 * position);
+      for (let channel = 0; channel < 3; channel++) values[offset + channel] = low[channel] + (high[channel] - low[channel]) * blend;
+    }
+    colors[form] = values;
+  }
+  return colors;
+}
+
 /**
- * A monochrome field in three draws. The caller supplies time and visibility.
+ * A colored field in three draws. The caller supplies time and visibility.
  * No animation loop, listeners, external assets, or per-frame allocations.
  */
 export function createWorldFieldLab(THREE, scene, { mobile = false } = EMPTY) {
   const group = new THREE.Group();
-  group.name = 'Monochrome particle field';
+  group.name = 'Particle field';
   group.visible = false;
   scene.add(group);
   const resources = [];
@@ -110,11 +132,13 @@ export function createWorldFieldLab(THREE, scene, { mobile = false } = EMPTY) {
   };
   const vertexShader = `
     attribute vec3 aKnot, aHelix;
+    attribute vec3 aSphereColor, aKnotColor, aHelixColor;
     attribute float aSeed;
     uniform vec3 uWeights;
     uniform vec2 uPointer;
     uniform float uTime, uPointScale;
     varying float vSeed, vPulse;
+    varying vec3 vFieldColor;
     void main() {
       vec3 p = position * uWeights.x + aKnot * uWeights.y + aHelix * uWeights.z;
       float transition = 1. - dot(uWeights, uWeights);
@@ -129,6 +153,7 @@ export function createWorldFieldLab(THREE, scene, { mobile = false } = EMPTY) {
       gl_PointSize = clamp((.95 + aSeed * .7) * uPointScale / max(4., -view.z), .85, 3.2);
       vSeed = aSeed;
       vPulse = pow(max(0., sin(aSeed * 39. + uTime * .47)), 18.);
+      vFieldColor = aSphereColor * uWeights.x + aKnotColor * uWeights.y + aHelixColor * uWeights.z;
     }
   `;
   const output = `
@@ -136,7 +161,7 @@ export function createWorldFieldLab(THREE, scene, { mobile = false } = EMPTY) {
     #include <colorspace_fragment>
   `;
   const material = fragmentShader => keep(new THREE.ShaderMaterial({
-    uniforms, vertexShader, fragmentShader, transparent: true,
+    uniforms, vertexShader, fragmentShader: `varying vec3 vFieldColor;\n${fragmentShader}`, transparent: true,
     depthTest: true, depthWrite: false, blending: THREE.AdditiveBlending,
   }));
   function geometryFor(data) {
@@ -144,6 +169,10 @@ export function createWorldFieldLab(THREE, scene, { mobile = false } = EMPTY) {
     geometry.setAttribute('position', new THREE.BufferAttribute(data.sphere, 3));
     geometry.setAttribute('aKnot', new THREE.BufferAttribute(data.knot, 3));
     geometry.setAttribute('aHelix', new THREE.BufferAttribute(data.helix, 3));
+    const colors = createFieldColors(data);
+    geometry.setAttribute('aSphereColor', new THREE.BufferAttribute(colors.sphere, 3));
+    geometry.setAttribute('aKnotColor', new THREE.BufferAttribute(colors.knot, 3));
+    geometry.setAttribute('aHelixColor', new THREE.BufferAttribute(colors.helix, 3));
     const seeds = new Float32Array(data.sphere.length / 3);
     for (let index = 0; index < seeds.length; index++) seeds[index] = (Math.imul(index + 1, 1597334677) >>> 0) / 4294967296;
     geometry.setAttribute('aSeed', new THREE.BufferAttribute(seeds, 1));
@@ -161,7 +190,7 @@ export function createWorldFieldLab(THREE, scene, { mobile = false } = EMPTY) {
       float radius = dot(gl_PointCoord - .5, gl_PointCoord - .5) * 4.;
       if (radius > 1.) discard;
       float alpha = (1. - smoothstep(.05, 1., radius)) * (.6 + vSeed * .34);
-      gl_FragColor = vec4(vec3(.82 + vPulse * .5), alpha);
+      gl_FragColor = vec4(vFieldColor * (.82 + vPulse * .5), alpha);
       ${output}
     }
   `)), 1);
@@ -185,14 +214,14 @@ export function createWorldFieldLab(THREE, scene, { mobile = false } = EMPTY) {
   add(new THREE.LineSegments(traceGeometry, material(`
     varying float vSeed, vPulse;
     void main() {
-      gl_FragColor = vec4(vec3(.86), .075 + vPulse * .07);
+      gl_FragColor = vec4(vFieldColor * .86, .075 + vPulse * .07);
       ${output}
     }
   `)), 0);
 
   // Sparse diffraction glints sit on real particles, with no texture or sprites.
   const glintGeometry = keep(new THREE.BufferGeometry());
-  for (const key of ['position', 'aKnot', 'aHelix', 'aSeed']) glintGeometry.setAttribute(key, pointGeometry.getAttribute(key));
+  for (const key of ['position', 'aKnot', 'aHelix', 'aSeed', 'aSphereColor', 'aKnotColor', 'aHelixColor']) glintGeometry.setAttribute(key, pointGeometry.getAttribute(key));
   const glintIndices = new Uint16Array(Math.ceil(count / 31));
   for (let index = 0; index < glintIndices.length; index++) glintIndices[index] = index * 31;
   glintGeometry.setIndex(new THREE.BufferAttribute(glintIndices, 1));
@@ -205,7 +234,7 @@ export function createWorldFieldLab(THREE, scene, { mobile = false } = EMPTY) {
       float halo = exp(-radius * 5.);
       float cross = exp(-abs(point.x) * 22.) + exp(-abs(point.y) * 22.);
       float alpha = (halo * .15 + cross * .08) * (.2 + vPulse * .8) * (1. - radius);
-      gl_FragColor = vec4(vec3(1.), alpha);
+      gl_FragColor = vec4(mix(vFieldColor, vec3(1.), .3), alpha);
       ${output}
     }
   `);
