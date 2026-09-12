@@ -46,7 +46,7 @@ export function createWorldSingularity(THREE, scene) {
       return p;
     }
     vec3 fieldColor(float cool) {
-      return mix(vec3(.59), vec3(.86), cool);
+      return mix(vec3(1., .52, .16), vec3(.12, .78, .65), cool);
     }
   `;
   const output = `
@@ -120,7 +120,7 @@ export function createWorldSingularity(THREE, scene) {
       float alpha = (thread + veil) * travel * opening * uVisibility;
       alpha *= (.20 + uStrength * .65 + uHeat * .08) * (1. - uBloom * .38);
       vec3 color = fieldColor(smoothstep(3.7, 6., vBand) * .78);
-      color = mix(color, vec3(.96), thread * .35);
+      color = mix(color, vec3(1., .92, .71), thread * .35);
       gl_FragColor = vec4(color * (1. + uStrength * 1.4), alpha);
       ${output}
     }
@@ -222,7 +222,7 @@ export function createWorldSingularity(THREE, scene) {
       float edge = max(0., 1. - radius);
       float rays = (exp(-p.x * p.x * 130.) + exp(-p.y * p.y * 130.))
         * edge * edge * vSpark * .11;
-      vec3 color = mix(fieldColor(vCool), vec3(1.), core * .65);
+      vec3 color = mix(fieldColor(vCool), vec3(1., .96, .78), core * .65);
       gl_FragColor = vec4(color * (1. + vSpark * .65 + uStrength * .8), (core + glow + rays) * vAlpha);
       ${output}
     }
@@ -272,7 +272,7 @@ export function createWorldSingularity(THREE, scene) {
       float envelope = pow(max(0., 1. - vLength), 1.6) * smoothstep(0., .07, vLength);
       float phase = uStrength * (.28 * uCollapse + 1.15 * uBloom);
       float alpha = envelope * (.075 + threads * .68) * phase * uVisibility;
-      gl_FragColor = vec4(mix(vec3(.76), vec3(.95), vLength) * 1.65, alpha);
+      gl_FragColor = vec4(mix(vec3(1., .61, .24), vec3(.2, .82, .69), vLength) * 1.65, alpha);
       ${output}
     }
   `)));
@@ -306,7 +306,7 @@ export function createWorldSingularity(THREE, scene) {
       float alpha = (ring + halo) * (.18 + sweep * .82) * uVisibility;
       alpha *= (.035 + uStrength * .75) * (1. - uBloom * .56);
       if (alpha < .001) discard;
-      gl_FragColor = vec4(mix(vec3(.72), vec3(.93), sweep) * (1. + uStrength), alpha);
+      gl_FragColor = vec4(mix(vec3(.44, .84, .77), vec3(1., .88, .57), sweep) * (1. + uStrength), alpha);
       ${output}
     }
   `)));
@@ -326,7 +326,7 @@ export function createWorldSingularity(THREE, scene) {
     void main() {
       float edge = pow(max(0., 1. - abs(dot(normalize(vNormal), normalize(vView)))), 5.);
       float alpha = smoothstep(.56, .98, uCollapse) * uStrength;
-      vec3 color = vec3(.002) + vec3(.68) * edge * .5;
+      vec3 color = vec3(.001, .003, .004) + vec3(.86, .53, .2) * edge * .5;
       gl_FragColor = vec4(color, alpha);
       ${output}
     }

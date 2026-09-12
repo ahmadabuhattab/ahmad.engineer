@@ -11,8 +11,8 @@ export function createWorldEnvironment(THREE, scene) {
   const matrix = new THREE.Matrix4();
   const transform = new THREE.Object3D();
   const color = new THREE.Color();
-  const gold = new THREE.Color('#b4b4b4');
-  const ice = new THREE.Color('#dedede');
+  const gold = new THREE.Color('#c6a575');
+  const ice = new THREE.Color('#8ccbc3');
   const uniforms = {
     uTime: { value: 0 },
     uScatter: { value: 0 },
@@ -83,9 +83,9 @@ export function createWorldEnvironment(THREE, scene) {
       float edgeFade = 1. - smoothstep(27., 44., radius);
       float minorGrid = max(line(p.x * 1.25, .55), line(p.y * 1.25, .55));
       float majorGrid = max(line(p.x / 4., .85), line(p.y / 4., .85));
-      vec3 teal = vec3(.24);
-      vec3 warm = vec3(.37);
-      vec3 color = vec3(.007);
+      vec3 teal = vec3(.11, .29, .24);
+      vec3 warm = vec3(.65, .40, .16);
+      vec3 color = vec3(.003, .011, .009);
       float foreground = mix(.55 + smoothstep(-5., 3., p.x) * .45, 1., uImmersive);
       color += teal * (minorGrid * .035 + majorGrid * .09) * distanceFade * foreground;
       float radialMarks = ring(radius, 3.10, .012) + ring(radius, 3.37, .008)
@@ -110,14 +110,14 @@ export function createWorldEnvironment(THREE, scene) {
       float forgeSignal = ring(forge, 2.43, .015) + ring(forge, 2.63, .008) * .5;
       float mindPath = 1. - smoothstep(.009, .031, segment(p, vec2(-2.5, -1.2), vec2(-6.1, -3.1)));
       float forgePath = 1. - smoothstep(.009, .031, segment(p, vec2(2.6, -1.5), vec2(6., -3.8)));
-      color += vec3(.49) * (mindSignal + mindPath * .3) * (.28 + uRealm.y * .55);
+      color += vec3(.20, .60, .55) * (mindSignal + mindPath * .3) * (.28 + uRealm.y * .55);
       color += warm * (forgeSignal + forgePath * .3) * (.31 + uRealm.z * .55);
       vec2 mindTravel = mix(vec2(-2.5, -1.2), vec2(-6.1, -3.1), fract(uTime * .13 + uActivityProgress * uActivity.y));
       vec2 forgeTravel = mix(vec2(2.6, -1.5), vec2(6., -3.8), fract(uTime * .12 + uActivityProgress * uActivity.z));
-      color += vec3(.57) * exp(-length(p - mindTravel) * 9.) * (.14 + uActivity.y * 1.4);
+      color += vec3(.18, .7, .56) * exp(-length(p - mindTravel) * 9.) * (.14 + uActivity.y * 1.4);
       color += warm * exp(-length(p - forgeTravel) * 9.) * (.13 + uActivity.z * 1.3);
       color += teal * majorGrid * uWarp * .08;
-      color += vec3(.023) * exp(-radius * .22) * (.5 + uImmersive * .5);
+      color += vec3(.014, .029, .024) * exp(-radius * .22) * (.5 + uImmersive * .5);
       gl_FragColor = vec4(color * distanceFade, edgeFade * .97);
       #include <tonemapping_fragment>
       #include <colorspace_fragment>
@@ -164,8 +164,8 @@ export function createWorldEnvironment(THREE, scene) {
     });
   });
   const plinthMaterial = keep(new THREE.MeshStandardMaterial({
-    color: '#292929', metalness: .92, roughness: .27,
-    emissive: '#181818', emissiveIntensity: .2,
+    color: '#10241f', metalness: .76, roughness: .36,
+    emissive: '#09211a', emissiveIntensity: .2,
   }));
   world.add(new THREE.Mesh(mergeGeometry(plinthParts), plinthMaterial));
 
@@ -189,7 +189,7 @@ export function createWorldEnvironment(THREE, scene) {
       float crosshair = (1. - smoothstep(.004, .011, min(abs(p.x), abs(p.y)))) * smoothstep(.12, .2, r);
       float center = exp(-r * r * 1.7);
       float focus = mind ? uRealm.y : forge ? uRealm.z : uRealm.x;
-      vec3 tint = mind ? vec3(.34) : vec3(.28);
+      vec3 tint = mind ? vec3(.13, .42, .35) : vec3(.46, .28, .10);
       float energy = mind || forge ? .0 : uCharge * .23 + uScatter * .16;
       vec3 light = tint * (circles * .09 + marks * .45 + crosshair * .10 + center * (.06 + energy));
       gl_FragColor = vec4(light * (.55 + focus * .45), .78);
@@ -243,14 +243,14 @@ export function createWorldEnvironment(THREE, scene) {
     bevelSize: .018, bevelSegments: 1, curveSegments: 8,
   }));
   const portalMaterial = keep(new THREE.MeshStandardMaterial({
-    color: '#a0a0a0', metalness: .94, roughness: .23,
-    emissive: '#333333', emissiveIntensity: .2,
+    color: '#768478', metalness: .83, roughness: .30,
+    emissive: '#285747', emissiveIntensity: .2,
   }));
   const segments = new THREE.InstancedMesh(segmentGeometry, portalMaterial, segmentCount);
   for (let i = 0; i < segmentCount; i++) {
     matrix.makeRotationZ(i * Math.PI * 2 / segmentCount);
     segments.setMatrixAt(i, matrix);
-    segments.setColorAt(i, color.set(i % 9 === 0 ? '#d6d6d6' : i % 3 === 0 ? '#ababab' : '#858585'));
+    segments.setColorAt(i, color.set(i % 9 === 0 ? '#c7a77c' : i % 3 === 0 ? '#91b4a6' : '#718477'));
   }
   portal.add(segments);
 
@@ -264,7 +264,7 @@ export function createWorldEnvironment(THREE, scene) {
   }
   const portalMarkGeometry = keep(new THREE.BufferGeometry());
   portalMarkGeometry.setAttribute('position', new THREE.Float32BufferAttribute(portalMarks, 3));
-  const portalMarkMaterial = keep(new THREE.LineBasicMaterial({ color: '#c2c2c2', transparent: true, opacity: .37 }));
+  const portalMarkMaterial = keep(new THREE.LineBasicMaterial({ color: '#a6c7b5', transparent: true, opacity: .37 }));
   portal.add(new THREE.LineSegments(portalMarkGeometry, portalMarkMaterial));
 
   const veilMaterial = shader(`
@@ -282,8 +282,8 @@ export function createWorldEnvironment(THREE, scene) {
       float streaks = pow(.5 + .5 * sin(a * 18. + sin(a * 7. - uTime * .06)), 8.);
       float wisps = streaks * gaussian((r - .72) / .14);
       float center = exp(-dot(p * vec2(1.0, 1.4), p * vec2(1.0, 1.4)) * 3.7);
-      vec3 color = vec3(.14) * (inner * .15 + wisps * .07 + center * .025);
-      color += vec3(.56) * edge * (.26 + uCharge * .3 + uScatter * .16 + uActivity.x * .45);
+      vec3 color = vec3(.06, .19, .15) * (inner * .15 + wisps * .07 + center * .025);
+      color += vec3(.45, .63, .48) * edge * (.26 + uCharge * .3 + uScatter * .16 + uActivity.x * .45);
       gl_FragColor = vec4(color, min(1., edge * .6 + inner * .3 + wisps * .12 + center * .2));
       #include <tonemapping_fragment>
       #include <colorspace_fragment>
@@ -335,14 +335,14 @@ export function createWorldEnvironment(THREE, scene) {
         float key = max(0., dot(normalize(vNormal), normalize(vec3(-.4, .8, .9))));
         float rim = pow(1. - abs(dot(normalize(vNormal), normalize(cameraPosition - vWorld))), 3.);
         float forge = exp(-length(vWorld.xz - vec2(8., -5.)) * .28);
-        vec3 shade = vColor * (.085 + key * .42) + vec3(.084) * rim;
+        vec3 shade = vColor * (.07 + key * .37) + vec3(.028, .07, .06) * rim;
         float edgeDistance = min(min(vUv.x, 1. - vUv.x), min(vUv.y, 1. - vUv.y));
         float machining = 1. - smoothstep(.0, .015, edgeDistance);
-        shade += vec3(.066) * machining * (.22 + key * .2);
-        shade += vec3(.073) * forge * (uRealm.z * .22 + uCharge * .1 + uScatter * .08);
+        shade += vec3(.035, .080, .059) * machining * (.22 + key * .2);
+        shade += vec3(.12, .07, .02) * forge * (uRealm.z * .22 + uCharge * .1 + uScatter * .08);
         // Fog recedes toward the site's dark emerald, instead of making the
         // furthest architecture brighter than the foreground landmarks.
-        shade = mix(shade, vec3(.007), haze);
+        shade = mix(shade, vec3(.004, .013, .009), haze);
         float copySide = 1. - smoothstep(-8., 2., vWorld.x);
         float presence = 1. - backdrop * (.52 + haze * .20);
         presence *= 1. - backdrop * copySide * (1. - uImmersive) * .60;
@@ -364,7 +364,7 @@ export function createWorldEnvironment(THREE, scene) {
         if (random() > .64) continue;
         facadeLights.push({ x: x + (column ? .23 : -.23) * width,
           y: -3.1 + level * .72, z: z + depth / 2 + .006,
-          height: random() > .85 ? .28 : .095, tint: random() > .3 ? '#858585' : '#adadad' });
+          height: random() > .85 ? .28 : .095, tint: random() > .3 ? '#427b68' : '#b99a60' });
       }
     }
   }
@@ -372,11 +372,11 @@ export function createWorldEnvironment(THREE, scene) {
   for (let side = -1; side <= 1; side += 2) {
     for (let i = 0; i < 8; i++) {
       building(side * (6.8 + i * 2.85), -14.5 - (i % 3) * 2.1,
-        .75 + (i % 3) * .24, silhouettes[(i + (side + 1)) % silhouettes.length], 1.10 + (i % 2) * .45, '#525252');
+        .75 + (i % 3) * .24, silhouettes[(i + (side + 1)) % silhouettes.length], 1.10 + (i % 2) * .45, '#24473b');
     }
     for (let i = 0; i < 10; i++) {
       building(side * (4.4 + i * 3.85), -29.5 - (i % 4) * 2.5,
-        1.1 + (i % 3) * .35, 8. + silhouettes[(i + 3) % silhouettes.length] * .85, 1.9, '#424242');
+        1.1 + (i % 3) * .35, 8. + silhouettes[(i + 3) % silhouettes.length] * .85, 1.9, '#183d31');
     }
   }
 
@@ -387,14 +387,14 @@ export function createWorldEnvironment(THREE, scene) {
     [1.02, .24, .60, 3.2, .74], [-.65, .8, .86, 1.15, .8],
     [.40, .82, .72, 1.42, .55], [-1.0, .25, .32, 2.38, .34],
   ];
-  for (const [x, z, w, h, d] of forgeBuildings) building(8 + x, -5 + z, w, h, d, '#747474', false);
+  for (const [x, z, w, h, d] of forgeBuildings) building(8 + x, -5 + z, w, h, d, '#416051', false);
   for (const y of [-1.50, -.75, .02, .80]) {
-    architecture.push({ x: 8.12, y, z: -5.55, width: .9, height: .09, depth: .82, tint: '#a6a6a6' });
+    architecture.push({ x: 8.12, y, z: -5.55, width: .9, height: .09, depth: .82, tint: '#8c886b' });
   }
   for (const x of [6.78, 9.22]) {
-    architecture.push({ x, y: -1.23, z: -4.35, width: .10, height: 3.8, depth: .10, tint: '#8a8a8a' });
+    architecture.push({ x, y: -1.23, z: -4.35, width: .10, height: 3.8, depth: .10, tint: '#56796a' });
   }
-  architecture.push({ x: 8, y: .66, z: -4.35, width: 2.54, height: .16, depth: .15, tint: '#969696' });
+  architecture.push({ x: 8, y: .66, z: -4.35, width: 2.54, height: .16, depth: .15, tint: '#658373' });
   const boxGeometry = keep(new THREE.BoxGeometry(1, 1, 1));
   const monoliths = new THREE.InstancedMesh(boxGeometry, architectureMaterial, architecture.length);
   architecture.forEach((p, i) => {
@@ -441,8 +441,8 @@ export function createWorldEnvironment(THREE, scene) {
   forge.position.set(8, 0, -5);
   world.add(forge);
   const forgeMetal = keep(new THREE.MeshStandardMaterial({
-    color: '#a3a3a3', metalness: .94, roughness: .25,
-    emissive: '#373737', emissiveIntensity: .12,
+    color: '#768879', metalness: .77, roughness: .32,
+    emissive: '#684020', emissiveIntensity: .12,
   }));
   const stacks = new THREE.InstancedMesh(keep(new THREE.CylinderGeometry(.13, .16, 1, 12)), forgeMetal, 4);
   [[-.6, -.88, -.72, 3.65], [.80, -1.18, -.87, 3.08], [-1.48, -1.30, -.12, 2.82], [1.37, -1.6, .43, 2.18]].forEach(([x, y, z, h], i) => {
@@ -477,7 +477,7 @@ export function createWorldEnvironment(THREE, scene) {
   addLine(forgeLines, [-1.22, .93, -.7], [1.22, .93, -.7]);
   const forgeLineGeometry = keep(new THREE.BufferGeometry());
   forgeLineGeometry.setAttribute('position', new THREE.Float32BufferAttribute(forgeLines, 3));
-  const forgeLineMaterial = keep(new THREE.LineBasicMaterial({ color: '#c5c5c5', transparent: true, opacity: .65 }));
+  const forgeLineMaterial = keep(new THREE.LineBasicMaterial({ color: '#d5b581', transparent: true, opacity: .65 }));
   forge.add(new THREE.LineSegments(forgeLineGeometry, forgeLineMaterial));
   const pipeRoutes = [
     [[-1.36, -2.75, .25], [-1.36, -1.8, .25], [-.82, -1.48, .60], [-.22, -1.48, .60]],
@@ -502,7 +502,7 @@ export function createWorldEnvironment(THREE, scene) {
       float bars = pow(max(0., cos(vUv.x * 6.283185 * 12.)), 20.);
       float scan = pow(max(0., sin(vUv.y * 26. - uTime * 1.4 - uActivityProgress * uActivity.z * 22.)), 18.);
       float illumination = (.22 + bars * .5 + scan * .55) * ends;
-      vec3 color = vec3(.52) * (.40 + uRealm.z * .42 + uCharge * .15 + uActivity.z * .95);
+      vec3 color = vec3(.94, .42, .09) * (.40 + uRealm.z * .42 + uCharge * .15 + uActivity.z * .95);
       gl_FragColor = vec4(color, illumination * (.48 + uActivity.z * .35));
       #include <tonemapping_fragment>
       #include <colorspace_fragment>
@@ -544,9 +544,9 @@ export function createWorldEnvironment(THREE, scene) {
   }
   const mindLineGeometry = keep(new THREE.BufferGeometry());
   mindLineGeometry.setAttribute('position', new THREE.Float32BufferAttribute(mindLinePositions, 3));
-  const mindLineMaterial = keep(new THREE.LineBasicMaterial({ color: '#dddddd', transparent: true, opacity: .37 }));
+  const mindLineMaterial = keep(new THREE.LineBasicMaterial({ color: '#94d9ce', transparent: true, opacity: .37 }));
   mind.add(new THREE.LineSegments(mindLineGeometry, mindLineMaterial));
-  const mindNodeMaterial = keep(new THREE.MeshBasicMaterial({ color: '#eeeeee', toneMapped: false }));
+  const mindNodeMaterial = keep(new THREE.MeshBasicMaterial({ color: '#c8ede1', toneMapped: false }));
   const nodeGeometry = keep(new THREE.IcosahedronGeometry(.065, 0));
   const nodeMeshes = new THREE.InstancedMesh(nodeGeometry, mindNodeMaterial, nodes.length);
   nodes.forEach((p, i) => {
@@ -559,8 +559,8 @@ export function createWorldEnvironment(THREE, scene) {
   });
   mind.add(nodeMeshes);
   const mindCoreMaterial = keep(new THREE.MeshStandardMaterial({
-    color: '#bebebe', metalness: .95, roughness: .16,
-    emissive: '#454545', emissiveIntensity: .3,
+    color: '#679982', metalness: .72, roughness: .16,
+    emissive: '#205f4b', emissiveIntensity: .45,
     flatShading: true,
   }));
   const mindCore = new THREE.Mesh(keep(new THREE.OctahedronGeometry(.73, 0)), mindCoreMaterial);
@@ -568,12 +568,12 @@ export function createWorldEnvironment(THREE, scene) {
   mind.add(mindCore);
   const cageSource = new THREE.OctahedronGeometry(.92, 0);
   const mindCage = new THREE.LineSegments(keep(new THREE.EdgesGeometry(cageSource)),
-    keep(new THREE.LineBasicMaterial({ color: '#d6d6d6', transparent: true, opacity: .48 })));
+    keep(new THREE.LineBasicMaterial({ color: '#c2d6b0', transparent: true, opacity: .48 })));
   cageSource.dispose();
   mindCage.scale.y = 1.45;
   mind.add(mindCage);
   const mindHalo = new THREE.Mesh(keep(new THREE.TorusGeometry(2.05, .007, 5, 112)),
-    keep(new THREE.MeshBasicMaterial({ color: '#b4b4b4', transparent: true, opacity: .52, toneMapped: false })));
+    keep(new THREE.MeshBasicMaterial({ color: '#78b7aa', transparent: true, opacity: .52, toneMapped: false })));
   mindHalo.rotation.x = 1.15;
   mindHalo.rotation.y = .25;
   mind.add(mindHalo);
@@ -601,10 +601,10 @@ export function createWorldEnvironment(THREE, scene) {
       float glow = exp(-dot((p - vec2(.51, .40)) * vec2(3.1, 4.5), (p - vec2(.51, .40)) * vec2(3.1, 4.5)));
       float edge = smoothstep(0., .13, p.x) * (1. - smoothstep(.84, 1., p.x))
         * smoothstep(0., .12, p.y) * (1. - smoothstep(.80, 1., p.y));
-      vec3 color = vec3(.038) * (band * field + glow * .30);
-      color += vec3(.031) * band * pow(field, 3.);
-      color += vec3(.032) * filament * (.34 + uWarp * .25);
-      color += vec3(.024) * glow * (uActivity.x * .4 + uActivity.y * .25 + uActivity.z * .2);
+      vec3 color = vec3(.018, .061, .045) * (band * field + glow * .30);
+      color += vec3(.035, .035, .018) * band * pow(field, 3.);
+      color += vec3(.015, .047, .031) * filament * (.34 + uWarp * .25);
+      color += vec3(.014, .030, .016) * glow * (uActivity.x * .4 + uActivity.y * .25 + uActivity.z * .2);
       gl_FragColor = vec4(color * (.70 + uImmersive * .30), edge * .77);
       #include <tonemapping_fragment>
       #include <colorspace_fragment>
@@ -620,7 +620,7 @@ export function createWorldEnvironment(THREE, scene) {
     starPositions.push((random() - .5) * 116, 2.5 + Math.pow(random(), .82) * 42, -16 - random() * 48);
     starSizes.push(.48 + Math.pow(random(), 3) * 1.45);
     starPhases.push(random() * Math.PI * 2);
-    color.set(random() > .26 ? '#b9b9b9' : '#d3d3d3');
+    color.set(random() > .26 ? '#92baa7' : '#dac096');
     starColors.push(color.r, color.g, color.b);
   }
   const starGeometry = keep(new THREE.BufferGeometry());

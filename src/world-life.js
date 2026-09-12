@@ -43,12 +43,12 @@ export function createWorldLife(THREE, world, uniforms, { mind, nodes, edges, fo
   });
   const fragmentGeometry = keep(new THREE.DodecahedronGeometry(1, 0));
   const fragmentMaterial = keep(new THREE.MeshStandardMaterial({
-    color: '#363636', metalness: .74, roughness: .4,
-    emissive: '#1e1e1e', emissiveIntensity: .1, flatShading: true,
+    color: '#263c39', metalness: .55, roughness: .6,
+    emissive: '#102822', emissiveIntensity: .1, flatShading: true,
   }));
   const stone = new THREE.InstancedMesh(fragmentGeometry, fragmentMaterial, fragments.length);
   const stoneEdges = new THREE.InstancedMesh(fragmentGeometry,
-    keep(new THREE.MeshBasicMaterial({ color: '#b2b2b2', wireframe: true, transparent: true, opacity: .025 })), fragments.length);
+    keep(new THREE.MeshBasicMaterial({ color: '#8bb8ad', wireframe: true, transparent: true, opacity: .025 })), fragments.length);
   stone.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
   // Both surfaces use identical poses, including during transit.
   stoneEdges.instanceMatrix = stone.instanceMatrix;
@@ -65,8 +65,8 @@ export function createWorldLife(THREE, world, uniforms, { mind, nodes, edges, fo
     { geometry: new THREE.TorusGeometry(.105, .021, 5, 16), x: .23, rx: Math.PI / 2 },
   ]);
   const serviceMaterial = keep(new THREE.MeshStandardMaterial({
-    color: '#a1a1a1', metalness: .92, roughness: .2,
-    emissive: '#343434', emissiveIntensity: .32,
+    color: '#9eab91', metalness: .79, roughness: .25,
+    emissive: '#1b493b', emissiveIntensity: .32,
   }));
   const scoutCount = 5, carriageCount = 8;
   const vehicles = new THREE.InstancedMesh(serviceGeometry, serviceMaterial, scoutCount + carriageCount);
@@ -88,7 +88,7 @@ export function createWorldLife(THREE, world, uniforms, { mind, nodes, edges, fo
   const trailPositions = new Float32Array(scoutCount * trailSegments * 2 * 3);
   const trailAges = [], trailColors = [];
   for (let scout = 0; scout < scoutCount; scout++) {
-    color.set(scout === 2 ? '#bcbcbc' : '#c9c9c9');
+    color.set(scout === 2 ? '#daba75' : '#80d5c7');
     for (let i = 0; i < trailSegments; i++) {
       for (const end of [0, 1]) {
         trailAges.push((i + end) / trailSegments);
@@ -132,7 +132,7 @@ export function createWorldLife(THREE, world, uniforms, { mind, nodes, edges, fo
   beaconGeometry.setAttribute('position', new THREE.BufferAttribute(beaconPositions, 3).setUsage(THREE.DynamicDrawUsage));
   const beaconColors = [], beaconSizes = [];
   for (let i = 0; i < scoutCount + carriageCount; i++) {
-    color.set(i === 2 || i >= scoutCount ? '#dddddd' : '#e8e8e8');
+    color.set(i === 2 || i >= scoutCount ? '#ecd19c' : '#a4eee0');
     beaconColors.push(color.r, color.g, color.b);
     beaconSizes.push(i < scoutCount ? 1.0 : .65);
   }
@@ -198,7 +198,7 @@ export function createWorldLife(THREE, world, uniforms, { mind, nodes, edges, fo
       void main() {
         float r = length(gl_PointCoord - .5) * 2.;
         float halo = exp(-r * r * 7.) * .42 + exp(-r * r * 48.);
-        gl_FragColor = vec4(vec3(.78), halo * vStrength * (1. - smoothstep(.7, 1., r)));
+        gl_FragColor = vec4(.35, .94, .79, halo * vStrength * (1. - smoothstep(.7, 1., r)));
         #include <tonemapping_fragment>
         #include <colorspace_fragment>
       }
@@ -222,18 +222,18 @@ export function createWorldLife(THREE, world, uniforms, { mind, nodes, edges, fo
   for (const x of [-1.08, 1.08]) conveyorParts.push({
     geometry: new THREE.BoxGeometry(.085, .24, .54), x, y: -2.76, z: 1.615,
   });
-  const conveyorMaterial = keep(new THREE.MeshStandardMaterial({ color: '#808080', metalness: .9, roughness: .24 }));
+  const conveyorMaterial = keep(new THREE.MeshStandardMaterial({ color: '#798975', metalness: .83, roughness: .28 }));
   const conveyor = new THREE.Mesh(merge(conveyorParts), conveyorMaterial);
   forge.add(conveyor);
   const slabMaterial = keep(new THREE.MeshStandardMaterial({
-    color: '#666666', roughness: .31, metalness: .78,
-    emissive: '#8f8f8f', emissiveIntensity: .65,
+    color: '#b9632b', roughness: .49, metalness: .45,
+    emissive: '#ff5315', emissiveIntensity: .65,
   }));
   const hotSlabs = new THREE.InstancedMesh(keep(new THREE.BoxGeometry(.29, .055, .34)), slabMaterial, 5);
   hotSlabs.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
   hotSlabs.frustumCulled = false;
   forge.add(hotSlabs);
-  const furnaceLight = new THREE.PointLight('#ffffff', 1.5, 7, 2);
+  const furnaceLight = new THREE.PointLight('#ff913e', 3.5, 7, 2);
   furnaceLight.position.set(.08, -1.4, 1.25);
   forge.add(furnaceLight);
 
@@ -285,7 +285,7 @@ export function createWorldLife(THREE, world, uniforms, { mind, nodes, edges, fo
         float r = length(gl_PointCoord - .5) * 2.;
         float shape = pow(max(0., 1. - r * r), vType < .5 ? 2.7 : 1.6);
         float envelope = sin(vLife * 3.14159);
-        vec3 tint = vType < .5 ? vec3(.49) : vec3(.70);
+        vec3 tint = vType < .5 ? vec3(.43, .59, .51) : vec3(1., .55, .16);
         gl_FragColor = vec4(tint, shape * envelope * vStrength);
         #include <tonemapping_fragment>
         #include <colorspace_fragment>
@@ -320,7 +320,7 @@ export function createWorldLife(THREE, world, uniforms, { mind, nodes, edges, fo
         vec2 p = (vUv - .5) * 2.;
         float r = length(p);
         float selected = vRealm < .5 ? uActivity.x : vRealm < 1.5 ? uActivity.y : uActivity.z;
-        vec3 tint = vRealm < .5 ? vec3(.34) : vRealm < 1.5 ? vec3(.29) : vec3(.31);
+        vec3 tint = vRealm < .5 ? vec3(.69, .38, .12) : vRealm < 1.5 ? vec3(.08, .44, .35) : vec3(.66, .22, .045);
         float corePower = vRealm < .5 ? uCharge * .09 + uScatter * .055 : 0.;
         float field = exp(-r * r * 4.4) * (.026 + selected * .16 + corePower);
         field += exp(-r * r * 24.) * selected * .04;
@@ -392,7 +392,7 @@ export function createWorldLife(THREE, world, uniforms, { mind, nodes, edges, fo
     }
     hotSlabs.instanceMatrix.needsUpdate = true;
     slabMaterial.emissiveIntensity = .48 + ignition * 2.5;
-    furnaceLight.intensity = 1.25 + ignition * 6.25 + Math.sin(time * 4.3) * .10;
+    furnaceLight.intensity = 3. + ignition * 15. + Math.sin(time * 4.3) * .23;
     serviceMaterial.emissiveIntensity = .24 + resonance * .45 + warp * .3;
   }
   update(0);

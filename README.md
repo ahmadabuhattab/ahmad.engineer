@@ -29,7 +29,15 @@ Run the build before previewing. It regenerates the ignored `public/card/` asset
 - `public/photos.html` keeps the existing gallery with accurate image metadata. `public/sitemap.xml` lists canonical pages and the gallery images.
 - Fonts are the same Google Fonts versions, now served locally. Licenses and exact source URLs are in `public/fonts/README.md`.
 
-The share preview is `public/og-monochrome-2026.jpg` (1200 × 630). Hero artwork is served responsively: `public/observatory-monochrome-2026.jpg` on desktop and `public/observatory-monochrome-mobile-2026.jpg` on phones. These images are rendered from the actual portfolio scenes and appear before interactive rendering starts.
+The share preview is `public/og-colour-2026.jpg` (1200 × 630). Hero artwork is served responsively: `public/observatory-colour-2026.jpg` on desktop and `public/observatory-colour-mobile-2026.jpg` on phones. These images are rendered from the actual portfolio scenes and appear before interactive rendering starts.
+
+## Mobile and color refinements
+
+- The interface retains its black-and-white palette. Personal photographs use their original colors, and the observatory's materials, lighting, and lightweight renderer again use gold, teal, and amber. Field Lab forms use cyan, gold, and violet, with colors blending during the existing morphs. Responsive fallback artwork and the social preview match the colored scene.
+- Removed the oversized decorative footer arrow that appeared as a large emoji on iPhone. Directional link glyphs are now small, fixed vector icons, including chapter links updated by JavaScript.
+- The observatory entrance has a recessed iris, silver bevel, and visible pressed state. Its label and native button behavior remain accessible with touch, keyboard, and reduced motion.
+- Portrait observatory panels show the title and primary action in about 136px. Details reveals the description, chapter link, and optional controls. The Field Lab keeps all three form controls immediately available. Rotating the phone preserves the scene, selection, and motion preference. Mobile metric typography keeps number suffixes on the same line while enlarged text can reflow.
+- Six automated homepage, gallery, and world accessibility checks found zero WCAG A/AA violations. All 24 targeted panel assertions passed across portrait, landscape, short screens, and enlarged text. SVG bounds, dynamic chapter icons, original photographic color without JavaScript, and neutral interface colors were verified.
 
 ## Monochrome Field Lab: September 12, 2026
 

@@ -106,4 +106,4 @@
 }
 
 /* Match cached and no-JavaScript scene images to the live silver world. */
-.energy-poster { filter:grayscale(1); }
+.energy-poster { filter:none; }
