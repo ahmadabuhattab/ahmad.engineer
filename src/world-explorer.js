@@ -31,6 +31,13 @@ if (dialog && stage && visual && host && canvas && typeof dialog.showModal === '
   let flightRemaining = 0, activityRemaining = 0, strength = .65;
   let clockFrame = 0, lastTick = 0;
   let spacetimeTime = 0, spacetimeActive = false, spacetimePhase = '';
+  let labActive = false, labForm = 'sphere';
+  const labDescriptions = {
+    sphere: 'Symmetry in every direction. Drag to turn the field; pinch or use the camera controls to get closer.',
+    knot: 'A continuous path woven through space. Change the form and watch every point find a new place.',
+    helix: 'Two paths around one axis. A simple rule becomes a complex, living structure.',
+  };
+  const labControls = document.getElementById('worldFormControls');
   const visited = new Set();
   const audio = createWorldAudio();
   const disposePointer = initializeWorldPointer(dialog, canvas);
@@ -50,7 +57,8 @@ if (dialog && stage && visual && host && canvas && typeof dialog.showModal === '
     if (!active) return;
     const titleSize = parseFloat(getComputedStyle(document.getElementById('worldTitle')).fontSize);
     const shortViewport = innerWidth <= 600 ? innerHeight < 540 : innerHeight < 360;
-    dialog.classList.toggle('world-compact', titleSize > 44 || shortViewport);
+    const shortLab = labActive && (innerWidth <= 600 ? innerHeight < 700 : innerHeight < 460);
+    dialog.classList.toggle('world-compact', titleSize > 44 || shortViewport || shortLab);
   }
   const layoutObserver = new ResizeObserver(fitLayout);
   layoutObserver.observe(document.getElementById('worldTitle'));
@@ -59,6 +67,7 @@ if (dialog && stage && visual && host && canvas && typeof dialog.showModal === '
   const emitOrbit = () => document.dispatchEvent(new CustomEvent('world-orbit', { detail: { ...orbit } }));
   function selectRealm(next, revealStage = true) {
     clearGesture();
+    stopFieldLab();
     stopSpacetime();
     stopActivity();
     realm = Object.hasOwn(destinations, next) ? next : 'overview';
@@ -71,8 +80,8 @@ if (dialog && stage && visual && host && canvas && typeof dialog.showModal === '
     const link = document.getElementById('worldChapter');
     link.href = item.link;
     link.textContent = item.action + ' ↗';
-    experiment.hidden = !item.study;
-    experiment.textContent = item.experiment || 'Explore a district';
+    experiment.hidden = false;
+    experiment.textContent = item.experiment || 'Enter the field lab';
     experimentStatus.textContent = item.study ? 'An interactive study. Make it come alive.' : 'Touch a landmark to get closer.';
     document.getElementById('worldIntensityControl').hidden = realm !== 'energy';
     if (item.study) visited.add(realm);
@@ -82,6 +91,7 @@ if (dialog && stage && visual && host && canvas && typeof dialog.showModal === '
     emitOrbit();
     document.dispatchEvent(new CustomEvent('world-view', { detail: { active, realm } }));
     updateAudio();
+    fitLayout();
     if (revealStage && dialog.classList.contains('world-compact')) stage.scrollIntoView({ block: 'start', behavior: isPaused() ? 'instant' : 'smooth' });
   }
   function openWorld(event) {
@@ -99,13 +109,15 @@ if (dialog && stage && visual && host && canvas && typeof dialog.showModal === '
     fitLayout();
     dialog.scrollTop = 0;
     if (!isPaused()) startFlight();
-    if (realm === 'overview' && !isPaused() && visited.size === 0) startTour();
+    if (opener.dataset.labForm) startFieldLab(opener.dataset.labForm);
+    else if (realm === 'overview' && !isPaused() && visited.size === 0) startTour();
     updateAudio();
     close.focus({ preventScroll: true });
   }
   function restore() {
     if (!active) return;
     active = false;
+    stopFieldLab();
     stopSpacetime();
     stopTour();
     stopActivity();
@@ -162,11 +174,12 @@ if (dialog && stage && visual && host && canvas && typeof dialog.showModal === '
     experiment.disabled = !ready;
     tourButton.disabled = !ready;
     gravityButton.disabled = !ready;
-    hint.textContent = ready ? 'Drag to explore / Touch a landmark / 1 · 2 · 3 to travel' : failed ? 'Static view / Discover the work through the chapter links' : 'Preparing the observatory…';
+    labControls.querySelectorAll('button').forEach(button => { button.disabled = !ready; });
+    hint.textContent = ready ? labActive ? 'Drag to turn / Choose a form / Make it your own' : 'Drag to explore / Touch a landmark / 1 · 2 · 3 to travel' : failed ? 'Static view / Discover the work through the chapter links' : 'Preparing the observatory…';
     if (ready) runClock();
     else { stopClock(); clearGesture(); }
   }
-  new MutationObserver(syncRenderer).observe(host, { attributes: true, attributeFilter: ['data-render'] });
+  new MutationObserver(syncRenderer).observe(host, { attributes: true, attributeFilter: ['data-render', 'data-lab'] });
   syncRenderer();
   dialog.querySelectorAll('[data-world-camera]').forEach(button => button.addEventListener('click', () => {
     stopTour();
@@ -253,6 +266,7 @@ if (dialog && stage && visual && host && canvas && typeof dialog.showModal === '
   }
   function startTour() {
     if (tour) { stopTour(); return; }
+    if (labActive) selectRealm('overview', false);
     stopSpacetime();
     if (isPaused()) motion.click();
     tour = true; tourTime = 0; tourStep = -1; tourActed = false;
@@ -284,6 +298,42 @@ if (dialog && stage && visual && host && canvas && typeof dialog.showModal === '
     experiment.setAttribute('aria-disabled', 'true');
     dispatch('world-activity', { kind: item.study, strength, active: true });
     updateAudio(); runClock();
+  }
+  function stopFieldLab() {
+    if (!labActive) return;
+    labActive = false;
+    host.dataset.lab = 'false';
+    dialog.classList.remove('world-lab-active');
+    labControls.hidden = true;
+    dispatch('world-lab', { active: false, form: labForm });
+  }
+  function chooseLabForm(form) {
+    labForm = Object.hasOwn(labDescriptions, form) ? form : 'sphere';
+    host.dataset.labForm = labForm;
+    labControls.querySelectorAll('button').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.labShape === labForm)));
+    document.getElementById('worldDescription').textContent = labDescriptions[labForm];
+    experimentStatus.textContent = `${labForm === 'knot' ? 'Torus knot' : labForm === 'helix' ? 'Double helix' : 'Sphere'} selected. Choose a form to reshape the field.`;
+    dispatch('world-lab', { active: true, form: labForm });
+  }
+  function startFieldLab(form = 'sphere') {
+    if (!active) return;
+    stopTour();
+    selectRealm('overview', false);
+    flightRemaining = 0;
+    host.dataset.flight = 'false';
+    dispatch('world-flight', { active: false, progress: 1 });
+    labActive = true;
+    host.dataset.lab = 'true';
+    dialog.classList.add('world-lab-active');
+    labControls.hidden = false;
+    document.getElementById('worldIndex').textContent = 'THE FIELD LAB / MATHEMATICS IN MOTION';
+    document.getElementById('worldTitle').textContent = 'An idea. Infinite forms.';
+    experiment.textContent = 'Return to the observatory';
+    experiment.setAttribute('aria-disabled', 'false');
+    const link = document.getElementById('worldChapter');
+    link.href = '#field-lab'; link.textContent = 'About this study ↗';
+    chooseLabForm(form);
+    fitLayout();
   }
   function stopSpacetime() {
     if (!spacetimeActive) return;
@@ -369,7 +419,13 @@ if (dialog && stage && visual && host && canvas && typeof dialog.showModal === '
   }
   gravityButton.addEventListener('click', startSpacetime);
   tourButton.addEventListener('click', startTour);
-  experiment.addEventListener('click', () => { if (experiment.getAttribute('aria-disabled') !== 'true') activateStudy(); });
+  experiment.addEventListener('click', () => {
+    if (experiment.disabled || experiment.getAttribute('aria-disabled') === 'true') return;
+    if (labActive) selectRealm('overview', false);
+    else if (realm === 'overview') startFieldLab();
+    else activateStudy();
+  });
+  labControls.querySelectorAll('button').forEach(button => button.addEventListener('click', () => chooseLabForm(button.dataset.labShape)));
   document.getElementById('worldIntensity').addEventListener('input', event => {
     strength = Number(event.target.value) / 100;
     document.getElementById('worldIntensityValue').textContent = `${event.target.value}%`;
@@ -410,12 +466,12 @@ if (dialog && stage && visual && host && canvas && typeof dialog.showModal === '
   document.addEventListener('world-capture-ready', event => {
     if (!active || !(event.detail?.blob instanceof Blob)) return;
     const url = URL.createObjectURL(event.detail.blob), link = document.createElement('a');
-    link.href = url; link.download = `ahmad-observatory-${realm}.png`; link.click();
+    link.href = url; link.download = labActive ? `ahmad-field-lab-${labForm}.png` : `ahmad-observatory-${realm}.png`; link.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
     experimentStatus.textContent = 'Your view has been saved.';
   });
   document.addEventListener('world-select', event => {
-    if (!active || spacetimeActive || !Object.hasOwn(destinations, event.detail?.realm)) return;
+    if (!active || labActive || spacetimeActive || !Object.hasOwn(destinations, event.detail?.realm)) return;
     stopTour();
     if (realm === event.detail.realm) activateStudy(); else selectRealm(event.detail.realm);
   });

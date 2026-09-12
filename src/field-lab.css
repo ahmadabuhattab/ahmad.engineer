@@ -1,0 +1,38 @@
+@media screen {
+  .field-lab-preview { display:none; }
+  .world-available .field-lab-preview { display:grid; grid-template-columns:1fr 1.35fr; gap:6%; padding:96px var(--space); background:#080808; border-bottom:1px solid #ffffff22; }
+  .lab-intro>.micro { color:#a3a3a3; font-size:9px; margin-bottom:24px; }
+  .lab-intro h2 { color:#f4f4f4; font-size:clamp(40px,4.4vw,70px); font-weight:400; line-height:1.04; letter-spacing:-.055em; }
+  .lab-intro h2 em { font-family:'Instrument Serif',Georgia,serif; font-weight:400; color:#c8c8c8; }
+  .lab-intro>p:not(.micro) { max-width:330px; margin-top:24px; font-size:12px; line-height:1.9; color:#aaa; }
+  .lab-invitation { display:flex; align-items:center; gap:30px; margin-top:30px; color:#ddd; font-size:10px; }
+  .lab-invitation>span { font-size:24px; }
+  .lab-entries { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,5.2em),1fr)); gap:1px; background:#ffffff24; align-self:center; border:1px solid #ffffff24; }
+  .lab-entry { position:relative; padding:22px 18px; min-width:0; overflow-wrap:anywhere; background:radial-gradient(ellipse at 50% 30%,#222,#0b0b0b 72%); color:#e3e3e3; border:0; text-align:left; transition:background .3s,color .3s; }
+  .lab-entry[hidden] { display:none; }
+  .lab-entry .micro { display:block; font-size:7px; letter-spacing:.1em; color:#aaa; }
+  .lab-glyph { display:block; width:100%; aspect-ratio:1; margin:25px 0 22px; color:#d1d1d1; transition:transform .7s; filter:drop-shadow(0 0 12px #ffffff24); }
+  .lab-entry-name { display:flex; justify-content:space-between; align-items:center; gap:8px; font:400 25px 'Instrument Serif',Georgia,serif; }
+  .lab-entry-name>span { font:300 16px Inter,sans-serif; }
+  .lab-entry-note { display:block; color:#a5a5a5; font-size:9px; line-height:1.7; margin-top:11px; }
+  .lab-entry:hover { background:radial-gradient(ellipse at 50% 30%,#363636,#141414 72%); color:#fff; }
+  .motion-enabled .lab-entry:hover .lab-glyph { transform:perspective(500px) rotateY(-16deg) rotateZ(7deg); }
+  .lab-entry:focus-visible { outline:2px solid #fff; outline-offset:5px; z-index:1; }
+  .world-form-controls { display:flex; gap:5px; margin-top:12px; }
+  .world-form-controls[hidden] { display:none; }
+  .world-form-controls button { flex:1; min-width:0; min-height:44px; padding:8px; background:#111; border:1px solid #ffffff33; color:#bdbdbd; font:400 10px Inter,sans-serif; }
+  .world-form-controls button[aria-pressed=true] { background:#e7e7e7; color:#101010; border-color:#e7e7e7; }
+  .world-form-controls button:disabled { opacity:.4; }
+  .world-lab-active .energy-controls { display:none!important; }
+  .world-lab-active #worldDiscovered { display:none; }
+  .project { position:relative; isolation:isolate; }
+  .project:before { content:''; position:absolute; inset:0; z-index:2; pointer-events:none; opacity:0; background:radial-gradient(360px circle at var(--light-x,50%) var(--light-y,20%),#ffffff0e,transparent 70%); transition:opacity .3s; }
+  @media(hover:hover) and (pointer:fine) {
+    .motion-enabled .project:hover:before { opacity:1; }
+    .motion-enabled .project .project-art { transition:transform .35s ease-out; }
+    .motion-enabled .project:hover .project-art { transform:perspective(1000px) rotateX(var(--art-x,0deg)) rotateY(var(--art-y,0deg)); }
+  }
+  @media(max-width:900px) { .world-available .field-lab-preview { gap:40px; grid-template-columns:1fr; padding-block:65px; } .lab-intro { max-width:550px; } .lab-entries { width:100%; } .lab-glyph { max-height:180px; } }
+  @media(max-width:600px) { .world-available .field-lab-preview { padding-block:54px; gap:30px; } .lab-intro h2 { font-size:48px; } .lab-invitation { margin-top:22px; } .lab-entry { padding:15px 10px; } .lab-entry .micro { font-size:6px; } .lab-entry-name { font-size:22px; } .lab-entry-note { font-size:8px; } .lab-glyph { margin:20px 0; } .world-lab-active .world-info h2 { font-size:25px; } .world-lab-active .world-info #worldActivityStatus { display:none; } }
+  @media(prefers-reduced-motion:reduce) { .lab-glyph,.project .project-art { transform:none!important; transition:none; } }
+}

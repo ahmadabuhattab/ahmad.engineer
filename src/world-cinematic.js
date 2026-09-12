@@ -37,7 +37,9 @@ export function createWorldCinematic(renderer, scene, camera, mobile) {
         float vignette=1.-smoothstep(.2,.78,length(p))*mix(.1,.32,uImmersive);
         float grain=fract(sin(dot(vUv*1517.+floor(uTime*24.),vec2(12.9898,78.233)))*43758.5453)-.5;
         c=c*vignette+grain*.006;
-        c+=vec3(.045,.03,.008)*uBloom*exp(-radius*3.);
+        c+=vec3(.024)*uBloom*exp(-radius*3.);
+        // Keep lens distortion optical and the finished image true neutral chrome.
+        c=vec3(dot(max(c,vec3(0.)),vec3(.2126,.7152,.0722)));
         gl_FragColor=vec4(c,1.);
       }
     `,

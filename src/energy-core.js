@@ -3,6 +3,7 @@ import { sampleCycle, CYCLE_DURATION, BURST_START } from './energy-cycle.js';
 import { createWorldEnvironment } from './world-environment.js';
 import { createWorldCinematic } from './world-cinematic.js';
 import { createWorldSingularity } from './world-singularity.js';
+import { createWorldFieldLab } from './world-field-lab.js';
 import { sampleSpacetime } from './world-spacetime.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import './energy-core.css';
@@ -32,11 +33,11 @@ function initializeArmillary(host, canvas) {
     return;
   }
 
-  renderer.setClearColor(0x030a0e, 1);
+  renderer.setClearColor(0x050505, 1);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, mobileBudget() ? 1.25 : 1.6));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.18;
+  renderer.toneMappingExposure = 1.08;
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 140);
@@ -45,17 +46,17 @@ function initializeArmillary(host, canvas) {
   scene.add(instrument);
   const resources = new Set();
   const retain = resource => { resources.add(resource); return resource; };
-  const gold = new THREE.Color('#dbc392');
-  const ice = new THREE.Color('#c5e3d7');
+  const gold = new THREE.Color('#bcbcbc');
+  const ice = new THREE.Color('#eeeeee');
 
-  scene.add(new THREE.HemisphereLight(0xe9e7cf, 0x072923, 2));
-  const key = new THREE.DirectionalLight(0xfff1d4, 4.5);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x141414, 1.65));
+  const key = new THREE.DirectionalLight(0xffffff, 4.3);
   key.position.set(-3, 4, 5);
   scene.add(key);
-  const rim = new THREE.DirectionalLight(0xa3d5cd, 2.4);
+  const rim = new THREE.DirectionalLight(0xffffff, 2.0);
   rim.position.set(3, -2, -2);
   scene.add(rim);
-  const heartLight = new THREE.PointLight(0xffbf73, 13, 9, 2);
+  const heartLight = new THREE.PointLight(0xffffff, 9, 9, 2);
   heartLight.position.set(0, 0, 0.45);
   scene.add(heartLight);
   // A locally generated reflection environment gives metals readable faces
@@ -71,10 +72,11 @@ function initializeArmillary(host, canvas) {
     pmrem.dispose();
   }
   regenerateReflections();
-  scene.environmentIntensity = .38;
+  scene.environmentIntensity = .45;
   scene.environmentRotation.y = .65;
   const world = createWorldEnvironment(THREE, scene);
   const singularity = createWorldSingularity(THREE, scene);
+  const fieldLab = createWorldFieldLab(THREE, scene, { mobile: mobileBudget() });
   const cinematic = createWorldCinematic(renderer, scene, camera, mobileBudget());
 
   const glowTexture = retain(makeGlowTexture());
@@ -89,9 +91,9 @@ function initializeArmillary(host, canvas) {
     return sprite;
   }
 
-  const halo = glow(0xe7bc78, 6.2, 0.5);
+  const halo = glow(0xbcbcbc, 6.2, 0.3);
   instrument.add(halo);
-  const innerGlow = glow(0xffdfab, 2.75, 0.56);
+  const innerGlow = glow(0xe8e8e8, 2.75, 0.28);
   instrument.add(innerGlow);
 
   const nucleusMaterial = retain(new THREE.ShaderMaterial({
@@ -132,13 +134,15 @@ function initializeArmillary(host, canvas) {
         p.y += uTime * (.12 + uHeat * .12);
         float n = noise(p) * .65 + noise(p * 2.7) * .25 + noise(p * 6.5) * .1;
         float filaments = pow(1. - abs(sin(p.y * 2.1 + n * 8. + p.x * .8)), 7.);
-        float facing = max(dot(normalize(vNormal), normalize(vView)), 0.);
+        float facing = clamp(dot(normalize(vNormal), normalize(vView)), 0., 1.);
         float edge = pow(1. - facing, 2.1);
-        float light = .60 + .40 * max(dot(normalize(vNormal), normalize(vec3(-.5,.8,1.))), 0.);
-        vec3 amber = vec3(1.0, .57, .19);
-        vec3 ivory = vec3(1.0, .94, .71);
-        vec3 color = mix(amber, ivory, n * .8 + .22) * light;
-        color += ivory * (filaments * (.45 + uHeat * .8) + edge * .95);
+        vec3 lightDirection = normalize(vec3(-.5,.8,1.));
+        float light = .24 + .56 * max(dot(normalize(vNormal), lightDirection), 0.);
+        float polished = pow(max(dot(reflect(-lightDirection, normalize(vNormal)), normalize(vView)), 0.), 32.);
+        vec3 graphite = vec3(.18);
+        vec3 silver = vec3(.88);
+        vec3 color = mix(graphite, silver, n * .8 + .22) * light;
+        color += silver * (filaments * (.30 + uHeat * .7) + edge * .72 + polished * .9);
         gl_FragColor = vec4(color, 1.0);
         #include <tonemapping_fragment>
         #include <colorspace_fragment>
@@ -149,18 +153,18 @@ function initializeArmillary(host, canvas) {
   instrument.add(nucleus);
 
   const metal = retain(new THREE.MeshStandardMaterial({
-    color: 0x9f947b, metalness: 0.82, roughness: 0.31,
-    emissive: 0x493318, emissiveIntensity: 0.13,
+    color: 0x888888, metalness: 0.94, roughness: 0.24,
+    emissive: 0x262626, emissiveIntensity: 0.13,
     side: THREE.DoubleSide,
   }));
   const coolMetal = retain(new THREE.MeshStandardMaterial({
-    color: 0x91b4a7, metalness: 0.76, roughness: 0.28,
-    emissive: 0x20382f, emissiveIntensity: 0.12,
+    color: 0xc2c2c2, metalness: 0.96, roughness: 0.18,
+    emissive: 0x171717, emissiveIntensity: 0.12,
     side: THREE.DoubleSide,
   }));
   const warmTrace = retain(new THREE.MeshBasicMaterial({ color: gold, transparent: true, opacity: 0.75, toneMapped: false }));
   const coolTrace = retain(new THREE.MeshBasicMaterial({ color: ice, transparent: true, opacity: 0.58, toneMapped: false }));
-  const beadMaterial = retain(new THREE.MeshBasicMaterial({ color: 0xffefd4, toneMapped: false }));
+  const beadMaterial = retain(new THREE.MeshBasicMaterial({ color: 0xf4f4f4, toneMapped: false }));
   const beadGeometry = retain(new THREE.SphereGeometry(0.033, 10, 8));
   const orbits = [];
   const transform = new THREE.Object3D();
@@ -224,7 +228,7 @@ function initializeArmillary(host, canvas) {
     const bead = new THREE.Mesh(beadGeometry, beadMaterial);
     bead.position.set(radius, 0, 0.035);
     details.add(bead);
-    const beadGlow = glow(cool ? 0xb9eadc : 0xffdbae, 0.43, 0.83);
+    const beadGlow = glow(cool ? 0xeeeeee : 0xd2d2d2, 0.43, 0.73);
     beadGlow.position.copy(bead.position);
     details.add(beadGlow);
     orbits.push({ rotor, frame, tilt, band, pieces, details, speed, phase });
@@ -235,10 +239,10 @@ function initializeArmillary(host, canvas) {
   makeOrbit({ radius: 1.78, width: 0.046, tilt: [1.04, -0.65, 0.28], speed: 0.073, phase: -0.5 });
 
   const fineMaterial = retain(new THREE.LineBasicMaterial({
-    color: 0xadc8b8, transparent: true, opacity: 0.19, depthWrite: false,
+    color: 0xbebebe, transparent: true, opacity: 0.19, depthWrite: false,
   }));
   const innerMaterial = retain(new THREE.LineBasicMaterial({
-    color: 0xf5d6a4, transparent: true, opacity: 0.29, depthWrite: false,
+    color: 0xd6d6d6, transparent: true, opacity: 0.29, depthWrite: false,
   }));
   function lineOrbit(radius, tilt, material, start = 0, arc = Math.PI * 2) {
     const points = [];
@@ -289,8 +293,8 @@ function initializeArmillary(host, canvas) {
   const shardCount = 112;
   const shardGeometry = retain(new THREE.OctahedronGeometry(.082, 0));
   const shardMaterial = retain(new THREE.MeshStandardMaterial({
-    color: 0xffe8b8, metalness: .55, roughness: .22,
-    emissive: 0xf4a84b, emissiveIntensity: .45,
+    color: 0xd9d9d9, metalness: .91, roughness: .2,
+    emissive: 0x939393, emissiveIntensity: .28,
   }));
   const shards = retain(new THREE.InstancedMesh(shardGeometry, shardMaterial, shardCount));
   shards.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
@@ -346,7 +350,7 @@ function initializeArmillary(host, canvas) {
         float radius = length(gl_PointCoord - .5) * 2.;
         if (radius > 1.) discard;
         float alpha = exp(-radius * radius * 5.) * vAlpha;
-        vec3 color = mix(vec3(1., .7, .3), vec3(.5, .94, 1.), step(.8, vSeed));
+        vec3 color = mix(vec3(.76), vec3(1.), step(.8, vSeed));
         gl_FragColor = vec4(color, alpha);
       }
     `,
@@ -357,7 +361,7 @@ function initializeArmillary(host, canvas) {
 
   const waves = Array.from({ length: 3 }, (_, i) => {
     const material = retain(new THREE.MeshBasicMaterial({
-      color: i === 1 ? 0xa3efdd : 0xffd6a0,
+      color: i === 1 ? 0xeeeeee : 0xbdbdbd,
       transparent: true, opacity: 0, depthWrite: false,
       side: THREE.DoubleSide, blending: THREE.AdditiveBlending,
     }));
@@ -366,7 +370,7 @@ function initializeArmillary(host, canvas) {
     scene.add(wave);
     return wave;
   });
-  const flare = glow(0xffd7a0, 1, 0);
+  const flare = glow(0xdcdcdc, 1, 0);
   flare.scale.set(8, .12, 1);
   scene.add(flare);
 
@@ -374,7 +378,7 @@ function initializeArmillary(host, canvas) {
   const coronaPoints = new Float32Array(3 * 128 * 6);
   coronaGeometry.setAttribute('position', new THREE.BufferAttribute(coronaPoints, 3).setUsage(THREE.DynamicDrawUsage));
   const coronaMaterial = retain(new THREE.LineBasicMaterial({
-    color: 0xbee7d4, transparent: true, opacity: .25,
+    color: 0xd4d4d4, transparent: true, opacity: .25,
     depthWrite: false, blending: THREE.AdditiveBlending,
   }));
   const corona = new THREE.LineSegments(coronaGeometry, coronaMaterial);
@@ -396,6 +400,8 @@ function initializeArmillary(host, canvas) {
   let easedY = 0;
   let lastPhase = '';
   let immersive = host.dataset.world === 'true';
+  let fieldActive = host.dataset.lab === 'true';
+  let fieldForm = host.dataset.labForm || 'sphere';
   let realm = host.dataset.realm || 'overview';
   const activity = { kind: null, strength: 0, progress: 0 };
   let activityTarget = 0;
@@ -426,6 +432,7 @@ function initializeArmillary(host, canvas) {
     intelligence: { position: [-5, 2.5, 5], target: [-8, 0, -4] },
     industry: { position: [12, 3.2, 5], target: [8, 0, -5] },
   };
+  const fieldView = { position: [3, 1.5, 9], target: [0, 0, 0] };
   const raycaster = new THREE.Raycaster();
   const hitPoint = new THREE.Vector3();
   const hitPointer = new THREE.Vector2();
@@ -442,6 +449,7 @@ function initializeArmillary(host, canvas) {
     document.dispatchEvent(new CustomEvent('world-hover', { detail: { realm } }));
   }
   function pickLandmark(event) {
+    if (fieldActive) return null;
     const box = canvas.getBoundingClientRect();
     hitPointer.set((event.clientX - box.left) / box.width * 2 - 1, 1 - (event.clientY - box.top) / box.height * 2);
     raycaster.setFromCamera(hitPointer, camera);
@@ -477,16 +485,17 @@ function initializeArmillary(host, canvas) {
 
   function updateCamera(scatter, charge) {
     if (immersive) {
-      const view = views[realm] || views.overview;
+      const view = fieldActive ? fieldView : views[realm] || views.overview;
       desiredTarget.fromArray(view.target);
       viewOffset.fromArray(view.position).sub(desiredTarget);
       viewSphere.setFromVector3(viewOffset);
       viewSphere.theta += orbit.x * 1.35 + (host.dataset.touring === 'true' ? Math.sin(elapsed * .16) * .12 : 0);
       viewSphere.phi = THREE.MathUtils.clamp(viewSphere.phi + orbit.y * .55, .38, 1.49);
       viewSphere.radius *= (1 - orbit.zoom * .38) * Math.max(1, Math.min(1.4, .75 / camera.aspect));
+      if (fieldActive && camera.aspect < .9) viewSphere.radius *= 1.28;
       if (realm === 'energy') viewSphere.radius += scatter * 1.2;
       desiredPosition.setFromSpherical(viewSphere).add(desiredTarget);
-      if (camera.aspect < .9) { desiredTarget.y -= .85; desiredPosition.y -= .3; }
+      if (camera.aspect < .9) { desiredTarget.y -= fieldActive ? 2 : .85; desiredPosition.y -= fieldActive ? .7 : .3; }
     } else if (smallScreen.matches) {
       desiredTarget.set(0, -.5, -1);
       desiredPosition.set(.6, 2.6, Math.max(13, 12 / camera.aspect) + scatter * 1.5);
@@ -540,9 +549,11 @@ function initializeArmillary(host, canvas) {
     updateCamera(scatter, charge);
     activity.strength += (activityTarget - activity.strength) * (isPaused ? 1 : .07);
     activity.progress = Math.min(1, (elapsed - activityStarted) / 7);
-    world.update({ time: elapsed, scatter, charge, realm, immersive, activity, warp, collapse: spacetime.collapse, bloom: spacetime.bloom });
+    world.update({ time: elapsed, scatter, charge, realm, immersive, activity, warp, collapse: spacetime.collapse, bloom: spacetime.bloom, visible: !fieldActive });
+    instrument.visible = !fieldActive;
+    fieldLab.update({ time: elapsed, active: immersive && fieldActive, form: fieldForm, pointer: { x: easedX, y: easedY }, paused: isPaused });
     instrument.scale.setScalar(1 - spacetime.collapse * .92 + spacetime.bloom * .08);
-    singularity.update({ time: elapsed, scatter, charge, realm, immersive, singularity: spacetime, pointer: { x: easedX, y: easedY } });
+    singularity.update({ time: elapsed, scatter, charge, realm, immersive, singularity: spacetime, pointer: { x: easedX, y: easedY }, visible: !fieldActive });
     nucleus.rotation.y = elapsed * .15;
     nucleus.scale.setScalar(Math.max(.035, (1 - Math.min(1, scatter * 2.7)) * (1 - charge * .25)));
     nucleusMaterial.uniforms.uTime.value = elapsed;
@@ -594,11 +605,12 @@ function initializeArmillary(host, canvas) {
     for (let i = 0; i < waves.length; i++) {
       const progress = (shock - i * .1) / (1 - i * .1);
       const wave = waves[i];
-      wave.visible = progress > 0 && progress < 1;
+      wave.visible = !fieldActive && progress > 0 && progress < 1;
       wave.scale.setScalar(.7 + Math.max(0, progress) * 5.1);
       wave.material.opacity = wave.visible ? Math.sin(progress * Math.PI) * .34 * (1 - progress) : 0;
     }
     flare.material.opacity = shock > 0 ? Math.sin(shock * Math.PI) * (1 - shock) * .8 : charge * .1;
+    flare.visible = !fieldActive;
     flare.scale.x = 6 + scatter * 3;
     let at = 0;
     const shell = 1.04 + scatter * 2.55 - charge * .2;
@@ -622,13 +634,13 @@ function initializeArmillary(host, canvas) {
     dust.rotation.z = 0.08;
     dust.scale.setScalar(1 + scatter * .28);
     halo.scale.setScalar(6.2 + scatter * 3.2 - charge * .5);
-    halo.material.opacity = .44 + heat * .32 + Math.sin(elapsed * .75) * .035;
+    halo.material.opacity = .30 + heat * .24 + Math.sin(elapsed * .75) * .025;
     innerGlow.scale.setScalar(2.5 + scatter * 2.1);
-    innerGlow.material.opacity = .48 + charge * .45 + scatter * .13;
-    heartLight.intensity = 13 + heat * 14;
+    innerGlow.material.opacity = .28 + charge * .29 + scatter * .10;
+    heartLight.intensity = fieldActive ? 9 : 9 + heat * 9;
     const started = performance.now();
     lensPosition.set(0, 0, 0).project(camera);
-    cinematic.render({ time: elapsed, warp, immersive, heat, activity: activity.strength, singularity: spacetime, lensX: lensPosition.x * .5 + .5, lensY: lensPosition.y * .5 + .5 });
+    cinematic.render({ time: elapsed, warp, immersive, heat: fieldActive ? 0 : heat, activity: activity.strength, singularity: spacetime, lensX: lensPosition.x * .5 + .5, lensY: lensPosition.y * .5 + .5 });
     if (framesMeasured++ > 80 && framesMeasured < 220) {
       renderCost += (performance.now() - started - renderCost) * .04;
       if (framesMeasured === 219 && renderCost > 28 && cinematic.reduceResolution()) resize();
@@ -671,7 +683,7 @@ function initializeArmillary(host, canvas) {
   }
 
   function onPointerMove(event) {
-    if (immersive || event.pointerType === 'touch' || !canAnimate()) return;
+    if ((immersive && !fieldActive) || event.pointerType === 'touch' || !canAnimate()) return;
     const bounds = host.getBoundingClientRect();
     pointerX = ((event.clientX - bounds.left) / bounds.width - 0.5) * 2;
     pointerY = ((event.clientY - bounds.top) / bounds.height - 0.5) * 2;
@@ -697,7 +709,7 @@ function initializeArmillary(host, canvas) {
     realm = Object.hasOwn(views, event.detail?.realm) ? event.detail.realm : 'overview';
     orbit.x = orbit.y = orbit.zoom = 0;
     pointerX = pointerY = 0;
-    if (!immersive) flightStarted = -100;
+    if (!immersive) { flightStarted = -100; fieldActive = false; }
     resize();
     syncAnimation();
   }
@@ -708,6 +720,13 @@ function initializeArmillary(host, canvas) {
       if (Number.isFinite(value)) orbit[key] = THREE.MathUtils.clamp(value, key === 'zoom' ? -.5 : -1, 1);
     }
     if (immersive && isPaused && !disposed && !contextLost) render();
+  }
+  function onWorldLab(event) {
+    fieldActive = immersive && event.detail?.active === true;
+    if (['sphere', 'knot', 'helix'].includes(event.detail?.form)) fieldForm = event.detail.form;
+    cancelSceneTap();
+    hoverLandmark(null);
+    if (!disposed && !contextLost) render();
   }
   function onActivity(event) {
     if (!['resonance', 'signal', 'forge'].includes(event.detail?.kind)) return;
@@ -741,7 +760,7 @@ function initializeArmillary(host, canvas) {
   }
   function onContextRestored() {
     contextLost = false;
-    renderer.setClearColor(0x030a0e, 1);
+    renderer.setClearColor(0x050505, 1);
     regenerateReflections();
     resize();
     host.dataset.render = 'webgl';
@@ -763,6 +782,7 @@ function initializeArmillary(host, canvas) {
   document.addEventListener('energy-burst', onBurst);
   document.addEventListener('world-view', onWorldView);
   document.addEventListener('world-orbit', onWorldOrbit);
+  document.addEventListener('world-lab', onWorldLab);
   document.addEventListener('world-activity', onActivity);
   document.addEventListener('world-flight', onFlight);
   document.addEventListener('world-capture', onCapture);
@@ -792,6 +812,7 @@ function initializeArmillary(host, canvas) {
     document.removeEventListener('energy-burst', onBurst);
     document.removeEventListener('world-view', onWorldView);
     document.removeEventListener('world-orbit', onWorldOrbit);
+    document.removeEventListener('world-lab', onWorldLab);
     document.removeEventListener('world-activity', onActivity);
     document.removeEventListener('world-flight', onFlight);
     document.removeEventListener('world-capture', onCapture);
@@ -810,6 +831,7 @@ function initializeArmillary(host, canvas) {
     resources.forEach(resource => resource.dispose());
     world.dispose();
     singularity.dispose();
+    fieldLab.dispose();
     cinematic.dispose();
     renderer.dispose();
   }

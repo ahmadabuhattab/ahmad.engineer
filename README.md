@@ -29,7 +29,18 @@ Run the build before previewing. It regenerates the ignored `public/card/` asset
 - `public/photos.html` keeps the existing gallery with accurate image metadata. `public/sitemap.xml` lists canonical pages and the gallery images.
 - Fonts are the same Google Fonts versions, now served locally. Licenses and exact source URLs are in `public/fonts/README.md`.
 
-The share preview is `public/og-portfolio-2026.jpg` (1200 × 630). Hero artwork is served responsively: `public/observatory-gravity-2026.jpg` on desktop and `public/observatory-gravity-mobile-2026.jpg` on phones. These images are rendered from the actual portfolio scenes and appear before interactive rendering starts.
+The share preview is `public/og-monochrome-2026.jpg` (1200 × 630). Hero artwork is served responsively: `public/observatory-monochrome-2026.jpg` on desktop and `public/observatory-monochrome-mobile-2026.jpg` on phones. These images are rendered from the actual portfolio scenes and appear before interactive rendering starts.
+
+## Monochrome Field Lab: September 12, 2026
+
+- Black, white, graphite, and silver carry through the interface, gallery, actual scene materials, lights, shaders, and lightweight renderer. The collector card retains its original colors and independent controls. Fallback artwork and social previews are captured from the same monochrome scene.
+- The Field Lab offers three particle sculptures: a sphere, a torus knot, and a double helix. The points continuously morph between forms over 1.4 seconds, including when another form is selected mid-transition. The existing camera, snapshot, pause, and cinema controls work in the lab. Changing district, starting the journey, or bending spacetime restores the observatory.
+- `src/world-field-lab.js` owns three batched WebGL draws with 5,000 desktop or 2,200 mobile particles. The Canvas fallback uses 720 points from the same deterministic coordinates. Both share the renderer's clock, freeze with pause, and allow still form changes without enabling motion. The observatory background is hidden during the lab to focus the composition and reduce rendering work.
+- Desktop pointer lighting and restrained perspective follow project artwork without an idle animation loop. Touch and reduced-motion visitors retain static project panels. The original collector card source and structure are unchanged.
+- Local checks passed all 52 existing portfolio/world interactions and 29 new Field Lab flows, including cold reduced-motion entry, interrupted morphs, snapshots, context recovery, and mode navigation. The Canvas fallback passed phone, landscape, and desktop checks with stable paused frames and neutral output pixels.
+- Layout and palette checks passed 27 homepage/gallery/404 states. Field Lab controls also passed narrow phones, short landscape, and 200% text enlargement. Short lab viewports use a scrollable layout with reachable controls; ordinary phone framing leaves room above the information panel. No uncaught browser errors were found in these checks.
+- Automated WCAG A/AA checks found zero violations across the homepage, Field Lab, and gallery on desktop and phone viewports. Canonical URLs, page metadata, and structured data passed the release checks.
+- WebKit mobile navigation and gallery checks passed at 320, 390, and 844px. Its actual WebGL Field Lab changes paused forms, exports neutral snapshots, and keeps compact controls reachable. Local mobile Lighthouse scored 88 performance, 100 accessibility, 100 best practices, and 100 SEO, with CLS 0. These are lab measurements rather than physical-device or search-ranking guarantees.
 
 ## Mobile verification: September 12, 2026
 
