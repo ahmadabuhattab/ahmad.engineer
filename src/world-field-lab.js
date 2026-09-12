@@ -232,7 +232,8 @@ export function createWorldFieldLab(THREE, scene, { mobile = false } = EMPTY) {
       lastTime = time;
       sampleWeights(time);
       const next = Object.hasOwn(FORMS, state.form) ? FORMS[state.form] : 0;
-      if (next !== target) {
+      const pausedEntry = state.paused && state.active === true && !group.visible;
+      if (next !== target || pausedEntry) {
         fromWeights[0] = weights.x; fromWeights[1] = weights.y; fromWeights[2] = weights.z;
         target = next;
         morphStart = time;

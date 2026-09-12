@@ -40,6 +40,7 @@ The share preview is `public/og-monochrome-2026.jpg` (1200 × 630). Hero artwork
 - Local checks passed all 52 existing portfolio/world interactions and 29 new Field Lab flows, including cold reduced-motion entry, interrupted morphs, snapshots, context recovery, and mode navigation. The Canvas fallback passed phone, landscape, and desktop checks with stable paused frames and neutral output pixels.
 - Layout and palette checks passed 27 homepage/gallery/404 states. Field Lab controls also passed narrow phones, short landscape, and 200% text enlargement. Short lab viewports use a scrollable layout with reachable controls; ordinary phone framing leaves room above the information panel. No uncaught browser errors were found in these checks.
 - Automated WCAG A/AA checks found zero violations across the homepage, Field Lab, and gallery on desktop and phone viewports. Canonical URLs, page metadata, and structured data passed the release checks.
+- WebKit mobile navigation and gallery checks passed at 320, 390, and 844px. Its actual WebGL Field Lab changes paused forms, exports neutral snapshots, and keeps compact controls reachable. Local mobile Lighthouse scored 88 performance, 100 accessibility, 100 best practices, and 100 SEO, with CLS 0. These are lab measurements rather than physical-device or search-ranking guarantees.
 
 ## Mobile verification: September 12, 2026
 
