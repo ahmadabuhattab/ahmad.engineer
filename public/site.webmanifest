@@ -1,12 +1,11 @@
 {
-    "name": "Ahmad Abu-Hattab | Engineer & Founder",
+    "name": "Ahmad Abu-Hattab | Engineering Physics & Founder",
     "short_name": "Ahmad A.",
-    "description": "Engineering Physics student at McMaster University, CEO of City Centre Firm Corp, and founding team member at Vosyn ($250M valuation).",
+    "description": "Engineering Physics student at McMaster University. Founder of City Centre Firm. Currently at STELCO.",
     "start_url": "/",
     "display": "standalone",
-    "background_color": "#000000",
-    "theme_color": "#000000",
-    "orientation": "portrait-primary",
+    "background_color": "#fafafa",
+    "theme_color": "#fafafa",
     "icons": [
         {
             "src": "/android-chrome-192x192.png",
