@@ -1,25 +1,9 @@
 {
   "name": "ahmad.engineer",
-  "version": "1.0.0",
-  "description": "Personal website of Ahmad Abu-Hattab - Engineering Physics student at McMaster University, CEO of City Centre Firm Corp, and founding team at Vosyn.",
+  "version": "2.0.0",
+  "description": "The personal website of Ahmad Abu-Hattab, Engineering Physics student and founder.",
   "private": true,
-  "scripts": {
-    "dev": "npx serve public",
-    "build": "node scripts/build-card.mjs"
-  },
-  "keywords": [
-    "ahmad abu-hattab",
-    "engineering physics",
-    "mcmaster university",
-    "portfolio",
-    "personal website"
-  ],
+  "scripts": { "dev": "npx serve public", "build": "node scripts/build.mjs" },
   "author": "Ahmad Abu-Hattab",
-  "license": "UNLICENSED",
-  "dependencies": {
-    "three": "0.180.0"
-  },
-  "devDependencies": {
-    "esbuild": "0.25.10"
-  }
+  "license": "UNLICENSED"
 }
