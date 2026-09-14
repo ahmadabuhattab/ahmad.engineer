@@ -1,0 +1,30 @@
+@media screen {
+  .world-fold-controls { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:14px; margin-top:14px; padding-top:12px; border-top:1px solid #ffffff26; }
+  .world-fold-controls[hidden] { display:none; }
+  .world-fold-controls label { min-width:0; display:block; }
+  .world-fold-label { display:flex; justify-content:space-between; gap:6px; color:#d0d0d0; font:400 10px/1.3 'Inter',sans-serif; }
+  #worldFoldValue { font-variant-numeric:tabular-nums; color:#f0f0f0; }
+  #worldFold { width:100%; height:32px; display:block; accent-color:#e8e8e8; cursor:ew-resize; margin:0; }
+  #worldFoldPulse { position:relative; min-height:44px; min-width:108px; padding:10px 12px; color:#f4f4f4; background:linear-gradient(140deg,#3a3a3a,#161616); border:1px solid #ffffff5c; border-radius:5px; box-shadow:inset 0 1px #ffffff26,0 3px 0 #050505; font:500 10px/1.4 'Inter',sans-serif; }
+  #worldFoldPulse:hover { border-color:#eee; }
+  #worldFoldPulse:active { transform:translateY(2px); box-shadow:inset 0 1px #ffffff26; }
+  #worldFoldPulse[aria-pressed=true] { background:#e4e4e4; color:#111; }
+  #worldFoldPulse:disabled,#worldFold:disabled { opacity:.45; }
+  #worldFoldPulse:focus-visible,#worldFold:focus-visible { outline:2px solid #fff; outline-offset:4px; }
+  .world-form-controls button { overflow-wrap:anywhere; }
+  .world-dimension-active .world-info { border-radius:8px; }
+  @media(max-width:600px) and (orientation:portrait) {
+    .world-dialog.world-dimension-active .world-info { grid-template-areas:'eyebrow eyebrow' 'title details' 'forms forms' 'fold fold'; }
+    .world-dialog.world-dimension-active.world-details-open .world-info { grid-template-areas:'eyebrow eyebrow' 'title details' 'forms forms' 'fold fold' 'study study' 'story story' 'chapter chapter'; }
+    .world-dialog .world-fold-controls { grid-area:fold; margin-top:0; padding-top:7px; gap:12px; }
+    .world-dialog.world-dimension-active .world-info h2 { font-size:22px; }
+    .world-dialog .world-form-controls button { padding:7px 5px; font-size:10px; }
+    .world-fold-label { font-size:9px; }
+    #worldFold { height:36px; }
+    #worldFoldPulse { min-width:98px; padding:8px 10px; }
+  }
+  @media(max-height:650px) and (min-width:601px) {
+    .world-dimension-active .world-fold-controls { margin-top:8px; padding-top:7px; }
+    .world-dimension-active .world-study { display:none; }
+  }
+}

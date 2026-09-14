@@ -31,6 +31,15 @@ Run the build before previewing. It regenerates the ignored `public/card/` asset
 
 The share preview is `public/og-colour-2026.jpg` (1200 × 630). Hero artwork is served responsively: `public/observatory-colour-2026.jpg` on desktop and `public/observatory-colour-mobile-2026.jpg` on phones. These images are rendered from the actual portfolio scenes and appear before interactive rendering starts.
 
+## Dimension IV: September 14, 2026
+
+- A new homepage instrument introduces a live tesseract projection. Its fourth-axis slider supports touch and keyboard, and the selected angle carries into the immersive Field Lab. The preview uses a small Canvas2D renderer that stops offscreen, when paused, while the world is open, and in a hidden tab. Failed initialization keeps a static illustration and disables its inactive slider.
+- `src/dimension-math.js` defines the 16 vertices, 32 edges, and 24 square faces of a four-dimensional cube. Shared XW/YW rotations and bounded perspective projections drive both renderers. The original sphere, knot, and helix coordinates and colors are preserved.
+- Dimension IV adds luminous cyan/violet rails, amber fourth-axis bridges, translucent face membranes, and travelling highlights. Face-edge interpolation is bounded before exponentiation so desktop multisampling cannot create extreme HDR pixels. The native fourth-axis slider changes the projection without changing the camera. Fold space runs a reversible 3.2-second compression and release. Pausing freezes the sequence, while manual input and navigation cancel it safely. Explicit slider input can settle an incomplete paused morph into the selected form.
+- The existing audio opt-in gains a dedicated ambient palette and a fold cue. No audio context is created until the visitor enables sound. Existing sound, pause, visibility, and close controls retain ownership of playback.
+- Portrait controls occupy about 198px with all four forms and the axis control visible. Enlarged text switches to the scrollable layout, and both orientation orders preserve interaction state. The interface remains monochrome, while photographs and rendered worlds keep their colors. The collector card is unchanged.
+- Six targeted scenarios passed 56 interaction checks and 15 layout states, including WebGL, Canvas, static fallback, pause, keyboard input, audio consent, rotation, enlarged text, and focus restoration. The new preview and phone dialog accessibility audits found no violations. Geometry checks cover edge/face counts, bounded finite projections, morph continuity, and resource cleanup.
+
 ## Mobile and color refinements
 
 - The interface retains its black-and-white palette. Personal photographs use their original colors, and the observatory's materials, lighting, and lightweight renderer again use gold, teal, and amber. Field Lab forms use cyan, gold, and violet, with colors blending during the existing morphs. Responsive fallback artwork and the social preview match the colored scene.
