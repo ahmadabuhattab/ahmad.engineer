@@ -1,6 +1,7 @@
 import { sampleCycle, CYCLE_DURATION, BURST_START } from './energy-cycle.js';
 import { sampleSpacetime } from './world-spacetime.js';
 import { createFieldCoordinates, createFieldColors } from './world-field-lab.js';
+import { TESSERACT_VERTICES, TESSERACT_EDGES, createTesseractCoordinates, createTesseractFaces, createTesseractColors, projectTesseract, sampleFoldPulse } from './dimension-math.js';
 
 // A real geometry renderer for small screens. Every shard has a permanent home:
 // the same continuous displacement carries it out into space and back again.
@@ -214,19 +215,32 @@ function initializeMobileEnergy(host, canvas) {
   const fieldCount = 720;
   const fieldCoordinates = createFieldCoordinates(fieldCount);
   const fieldColors = createFieldColors(fieldCoordinates);
+  const tesseractCoordinates = createTesseractCoordinates(fieldCount);
+  const tesseractPoints = new Float32Array(fieldCount * 3);
+  fieldColors.tesseract = createTesseractColors(tesseractCoordinates);
+  const tesseractVertices = new Float32Array(16 * 3);
+  const tesseractScreen = new Float32Array(16 * 4);
+  const tesseractFaces = createTesseractFaces();
+  const tesseractFacePoints = new Float32Array(144 * 3);
+  const tesseractFaceScreen = new Float32Array(144 * 3);
+  const tesseractFaceColors = createTesseractColors(tesseractFaces.coordinates);
+  const tesseractFaceOrder = Array.from({ length: 48 }, (_, index) => index);
+  const tesseractFaceDepth = (a, b) => tesseractFaceScreen[a * 9 + 2] - tesseractFaceScreen[b * 9 + 2];
   // Canvas consumes sRGB values; WebGL keeps the same palette in linear RGB.
-  for (const values of Object.values(fieldColors)) {
+  for (const values of [...Object.values(fieldColors), tesseractFaceColors]) {
     for (let index = 0; index < values.length; index++) {
       const linear = values[index];
       values[index] = Math.round(255 * (linear <= .0031308 ? linear * 12.92 : 1.055 * linear ** (1 / 2.4) - .055));
     }
   }
   const fieldColor = new Float32Array(3);
-  const fieldGlow = [coolGlow, warmGlow, makeGlow([178, 119, 247])];
-  const fieldForms = ['sphere', 'knot', 'helix'];
+  const fieldGlow = [coolGlow, warmGlow, makeGlow([178, 119, 247]), coolGlow];
+  const fieldForms = ['sphere', 'knot', 'helix', 'tesseract'];
   let fieldActive = worldActive && host.dataset.lab === 'true';
   let fieldTarget = Math.max(0, fieldForms.indexOf(host.dataset.labForm));
   let fieldStarted = 0, fieldMorphing = false;
+  let fieldFold = finiteClamp(Number(host.dataset.labFold ?? .18), 0, 1);
+  let fieldPulseStarted = -Infinity;
   const fieldWeights = new Float64Array(fieldForms.map((_, index) => index === fieldTarget ? 1 : 0));
   const fieldFrom = new Float64Array(fieldWeights);
   const fieldProjection = new Float32Array(fieldCount * 4);
@@ -237,7 +251,7 @@ function initializeMobileEnergy(host, canvas) {
     if (!fieldMorphing) return;
     const progress = finiteClamp((elapsed - fieldStarted) / 1.4, 0, 1);
     const eased = progress ** 3 * (10 + progress * (-15 + progress * 6));
-    for (let index = 0; index < 3; index++) {
+    for (let index = 0; index < 4; index++) {
       fieldWeights[index] = fieldFrom[index] + ((index === fieldTarget ? 1 : 0) - fieldFrom[index]) * eased;
     }
     if (progress === 1) fieldMorphing = false;
@@ -245,14 +259,15 @@ function initializeMobileEnergy(host, canvas) {
 
   function renderField() {
     sampleField();
+    const foldPulse = sampleFoldPulse(elapsed - fieldPulseStarted);
     const portrait = width < height;
     const centerX = width * .5, centerY = height * (portrait ? .38 : .47);
     const unit = Math.min(width, height) * .164 * (1 + orbit.zoom * .3);
     context.fillStyle = '#060b10';
     context.fillRect(0, 0, width, height);
     const auraSize = Math.min(width, height) * .78;
-    for (let form = 0; form < 3; form++) {
-      context.globalAlpha = .09 * fieldWeights[form];
+    for (let form = 0; form < 4; form++) {
+      context.globalAlpha = (.09 + Math.abs(foldPulse) * .04) * fieldWeights[form];
       if (fieldWeights[form] > .001) context.drawImage(fieldGlow[form], centerX - auraSize, centerY - auraSize, auraSize * 2, auraSize * 2);
     }
     context.globalAlpha = 1;
@@ -284,11 +299,12 @@ function initializeMobileEnergy(host, canvas) {
     const rz = .1;
     const sx = Math.sin(rx), cx = Math.cos(rx), sy = Math.sin(ry), cy = Math.cos(ry), sz = Math.sin(rz), cz = Math.cos(rz);
     const sphere = fieldCoordinates.sphere, knot = fieldCoordinates.knot, helix = fieldCoordinates.helix;
+    if (fieldWeights[3] > 0) projectTesseract(tesseractCoordinates, tesseractPoints, elapsed, fieldFold, foldPulse);
     for (let index = 0; index < fieldCount; index++) {
       const source = index * 3, at = index * 4;
-      const x = sphere[source] * fieldWeights[0] + knot[source] * fieldWeights[1] + helix[source] * fieldWeights[2];
-      const y = sphere[source + 1] * fieldWeights[0] + knot[source + 1] * fieldWeights[1] + helix[source + 1] * fieldWeights[2];
-      const z = sphere[source + 2] * fieldWeights[0] + knot[source + 2] * fieldWeights[1] + helix[source + 2] * fieldWeights[2];
+      const x = sphere[source] * fieldWeights[0] + knot[source] * fieldWeights[1] + helix[source] * fieldWeights[2] + tesseractPoints[source] * fieldWeights[3];
+      const y = sphere[source + 1] * fieldWeights[0] + knot[source + 1] * fieldWeights[1] + helix[source + 1] * fieldWeights[2] + tesseractPoints[source + 1] * fieldWeights[3];
+      const z = sphere[source + 2] * fieldWeights[0] + knot[source + 2] * fieldWeights[1] + helix[source + 2] * fieldWeights[2] + tesseractPoints[source + 2] * fieldWeights[3];
       const ay = y * cx - z * sx, az = y * sx + z * cx;
       const bx = x * cy + az * sy, bz = -x * sy + az * cy;
       const perspective = 7 / Math.max(2.5, 7 - bz);
@@ -297,11 +313,60 @@ function initializeMobileEnergy(host, canvas) {
       fieldProjection[at + 2] = bz;
       fieldProjection[at + 3] = perspective;
     }
+    if (fieldWeights[3] > .001) {
+      projectTesseract(TESSERACT_VERTICES, tesseractVertices, elapsed, fieldFold, foldPulse);
+      projectTesseract(tesseractFaces.coordinates, tesseractFacePoints, elapsed, fieldFold, foldPulse);
+      for (let index = 0; index < 160; index++) {
+        const isFace = index >= 16;
+        const local = isFace ? index - 16 : index;
+        const points = isFace ? tesseractFacePoints : tesseractVertices;
+        const target = isFace ? tesseractFaceScreen : tesseractScreen;
+        const source = local * 3, at = local * (isFace ? 3 : 4);
+        const x = points[source], y = points[source + 1], z = points[source + 2];
+        const ay = y * cx - z * sx, az = y * sx + z * cx;
+        const bx = x * cy + az * sy, bz = -x * sy + az * cy;
+        const perspective = 7 / Math.max(2.5, 7 - bz);
+        target[at] = centerX + (bx * cz - ay * sz) * unit * perspective;
+        target[at + 1] = centerY - (bx * sz + ay * cz) * unit * perspective;
+        target[at + 2] = bz;
+        if (!isFace) target[at + 3] = perspective;
+      }
+      tesseractFaceOrder.sort(tesseractFaceDepth);
+      for (let order = 0; order < 48; order++) {
+        const face = tesseractFaceOrder[order], at = face * 9;
+        for (let channel = 0; channel < 3; channel++) fieldColor[channel] = tesseractFaceColors[at + channel];
+        context.fillStyle = rgba(fieldColor, fieldWeights[3] ** 2 * (.018 + Math.abs(foldPulse) * .018));
+        context.beginPath();
+        context.moveTo(tesseractFaceScreen[at], tesseractFaceScreen[at + 1]);
+        context.lineTo(tesseractFaceScreen[at + 3], tesseractFaceScreen[at + 4]);
+        context.lineTo(tesseractFaceScreen[at + 6], tesseractFaceScreen[at + 7]);
+        context.closePath(); context.fill();
+      }
+      for (let edge = 0; edge < 32; edge++) {
+        const a = TESSERACT_EDGES[edge * 2], b = TESSERACT_EDGES[edge * 2 + 1];
+        const bridge = (a ^ b) === 8;
+        const tint = bridge ? '255,196,100' : a & 8 ? '177,120,255' : '110,226,247';
+        const alpha = fieldWeights[3] * (.32 + Math.abs(foldPulse) * .16);
+        context.strokeStyle = `rgba(${tint},${alpha})`;
+        context.lineWidth = .75 + fieldWeights[3] * .25;
+        context.beginPath();
+        context.moveTo(tesseractScreen[a * 4], tesseractScreen[a * 4 + 1]);
+        context.lineTo(tesseractScreen[b * 4], tesseractScreen[b * 4 + 1]);
+        context.stroke();
+        const travel = fraction(elapsed * .13 + edge * .137);
+        const x = tesseractScreen[a * 4] * (1 - travel) + tesseractScreen[b * 4] * travel;
+        const y = tesseractScreen[a * 4 + 1] * (1 - travel) + tesseractScreen[b * 4 + 1] * travel;
+        context.globalAlpha = fieldWeights[3] * (.5 + Math.abs(foldPulse) * .25);
+        const glow = bridge ? warmGlow : a & 8 ? fieldGlow[2] : coolGlow;
+        context.drawImage(glow, x - 4, y - 4, 8, 8);
+      }
+      context.globalAlpha = 1;
+    }
     const middle = Math.floor(fieldCount / 2) * 3;
     for (let channel = 0; channel < 3; channel++) {
-      fieldColor[channel] = fieldColors.sphere[middle + channel] * fieldWeights[0] + fieldColors.knot[middle + channel] * fieldWeights[1] + fieldColors.helix[middle + channel] * fieldWeights[2];
+      fieldColor[channel] = fieldColors.sphere[middle + channel] * fieldWeights[0] + fieldColors.knot[middle + channel] * fieldWeights[1] + fieldColors.helix[middle + channel] * fieldWeights[2] + fieldColors.tesseract[middle + channel] * fieldWeights[3];
     }
-    context.strokeStyle = rgba(fieldColor, .13);
+    context.strokeStyle = rgba(fieldColor, .13 * (1 - fieldWeights[3]));
     context.lineWidth = .55;
     context.beginPath();
     const lineEnd = fieldWeights[2] > .01 ? Math.floor(fieldCount * .82) : fieldCount;
@@ -321,7 +386,7 @@ function initializeMobileEnergy(host, canvas) {
       const radius = (.48 + (index % 7) * .055) * fieldProjection[at + 3];
       const colorOffset = index * 3;
       for (let channel = 0; channel < 3; channel++) {
-        fieldColor[channel] = fieldColors.sphere[colorOffset + channel] * fieldWeights[0] + fieldColors.knot[colorOffset + channel] * fieldWeights[1] + fieldColors.helix[colorOffset + channel] * fieldWeights[2];
+        fieldColor[channel] = fieldColors.sphere[colorOffset + channel] * fieldWeights[0] + fieldColors.knot[colorOffset + channel] * fieldWeights[1] + fieldColors.helix[colorOffset + channel] * fieldWeights[2] + fieldColors.tesseract[colorOffset + channel] * fieldWeights[3];
       }
       context.fillStyle = rgba(fieldColor, .3 + depth * .55 + pulse * .13);
       context.beginPath();
@@ -329,7 +394,7 @@ function initializeMobileEnergy(host, canvas) {
       context.fill();
       if (index % 31 === 0) {
         const size = (3.5 + pulse * 5) * fieldProjection[at + 3];
-        for (let form = 0; form < 3; form++) {
+        for (let form = 0; form < 4; form++) {
           context.globalAlpha = (.18 + pulse * .32) * fieldWeights[form];
           if (fieldWeights[form] > .001) context.drawImage(fieldGlow[form], fieldProjection[at] - size, fieldProjection[at + 1] - size, size * 2, size * 2);
         }
@@ -1074,6 +1139,7 @@ function initializeMobileEnergy(host, canvas) {
     viewTarget = { ...(worldActive ? realmViews[realm] : heroView), world: worldActive ? 1 : 0 };
     if (!worldActive) {
       fieldActive = false;
+      fieldPulseStarted = -Infinity;
       Object.assign(orbitTarget, { x: 0, y: 0, zoom: 0 });
     }
     if (!canAnimate()) moveCamera(true);
@@ -1119,6 +1185,7 @@ function initializeMobileEnergy(host, canvas) {
   function onWorldLab(event) {
     if (disposed) return;
     sampleField();
+    if (event.detail?.active !== true || event.detail?.form !== fieldForms[fieldTarget]) fieldPulseStarted = -Infinity;
     fieldActive = worldActive && event.detail?.active === true;
     const next = fieldForms.indexOf(event.detail?.form);
     if (next >= 0 && (next !== fieldTarget || paused)) {
@@ -1126,10 +1193,28 @@ function initializeMobileEnergy(host, canvas) {
       fieldTarget = next;
       fieldStarted = elapsed;
       fieldMorphing = !paused;
-      if (paused) for (let index = 0; index < 3; index++) fieldWeights[index] = index === next ? 1 : 0;
+      if (paused) for (let index = 0; index < 4; index++) fieldWeights[index] = index === next ? 1 : 0;
     }
     render();
     updatePlayback();
+  }
+  function onWorldLabFold(event) {
+    if (disposed || !Number.isFinite(event.detail?.value)) return;
+    fieldFold = finiteClamp(event.detail.value, 0, 1);
+    fieldPulseStarted = -Infinity;
+    if (paused) {
+      fieldMorphing = false;
+      for (let index = 0; index < 4; index++) fieldWeights[index] = index === fieldTarget ? 1 : 0;
+    }
+    if (worldActive && fieldActive) render();
+  }
+  function onWorldLabPulse(event) {
+    if (disposed) return;
+    if (event.detail?.active === true) {
+      if (!worldActive || !fieldActive || fieldForms[fieldTarget] !== 'tesseract' || paused) return;
+      fieldPulseStarted = elapsed;
+    } else fieldPulseStarted = -Infinity;
+    if (worldActive && fieldActive) render();
   }
   function onSingularity(event) {
     spacetime = sampleSpacetime(event.detail?.progress, event.detail?.active === true);
@@ -1157,6 +1242,8 @@ function initializeMobileEnergy(host, canvas) {
     document.removeEventListener('world-flight', onWorldFlight);
     document.removeEventListener('world-capture', onWorldCapture);
     document.removeEventListener('world-lab', onWorldLab);
+    document.removeEventListener('world-lab-fold', onWorldLabFold);
+    document.removeEventListener('world-lab-pulse', onWorldLabPulse);
     document.removeEventListener('world-singularity', onSingularity);
     motion.removeEventListener('change', updatePlayback);
     window.removeEventListener('pagehide', onPageHide);
@@ -1179,6 +1266,8 @@ function initializeMobileEnergy(host, canvas) {
   document.addEventListener('world-flight', onWorldFlight);
   document.addEventListener('world-capture', onWorldCapture);
   document.addEventListener('world-lab', onWorldLab);
+  document.addEventListener('world-lab-fold', onWorldLabFold);
+  document.addEventListener('world-lab-pulse', onWorldLabPulse);
   document.addEventListener('world-singularity', onSingularity);
   motion.addEventListener('change', updatePlayback);
   window.addEventListener('pagehide', onPageHide);

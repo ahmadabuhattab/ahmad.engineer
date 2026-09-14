@@ -2,6 +2,8 @@ import './experience.css';
 import './observatory.css';
 import './world-explorer.js';
 import './field-lab.css';
+import './dimension-controls.css';
+import './dimension-portal.js';
 import './site-depth.js';
 import './entry-control.css';
 

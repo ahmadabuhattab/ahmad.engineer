@@ -3,6 +3,7 @@ const PALETTES = {
   energy: { notes: [98, 146.83, 196], air: 760, pulse: 392 },
   intelligence: { notes: [110, 164.81, 220], air: 1050, pulse: 659.25 },
   industry: { notes: [65.41, 98, 130.81], air: 320, pulse: 261.63 },
+  dimension: { notes: [73.42, 146.83, 220], air: 1180, pulse: 880 },
 };
 const clamp = value => Math.max(0, Math.min(1, value));
 const intensity = value => Number.isFinite(value) ? clamp(value)

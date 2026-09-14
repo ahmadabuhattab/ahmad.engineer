@@ -1,7 +1,9 @@
+import { createTesseractCoordinates, createTesseractTraces, createTesseractFaces, createTesseractColors, projectTesseract, TESSERACT_GLSL } from './dimension-math.js';
+
 const TAU = Math.PI * 2;
 const MORPH_SECONDS = 1.4;
 const EMPTY = Object.freeze({});
-const FORMS = Object.freeze({ sphere: 0, knot: 1, helix: 2 });
+const FORMS = Object.freeze({ sphere: 0, knot: 1, helix: 2, tesseract: 3 });
 const finite = value => Number.isFinite(value) ? value : 0;
 const clamp = (value, low, high) => Math.max(low, Math.min(high, value));
 
@@ -96,7 +98,7 @@ export function createFieldColors(coordinates) {
     helix: [[.54, .25, .91], [.23, .74, .96]],
   };
   const colors = {};
-  for (const form of Object.keys(FORMS)) {
+  for (const form of Object.keys(palettes)) {
     const points = coordinates[form];
     const values = new Float32Array(points.length);
     const [low, high] = palettes[form];
@@ -123,24 +125,30 @@ export function createWorldFieldLab(THREE, scene, { mobile = false } = EMPTY) {
   const keep = resource => { resources.push(resource); return resource; };
   const count = mobile ? 2200 : 5000;
   const coordinates = createFieldCoordinates(count);
-  const weights = new THREE.Vector3(1, 0, 0);
-  const fromWeights = new Float64Array([1, 0, 0]);
+  const weights = new THREE.Vector4(1, 0, 0, 0);
+  const fromWeights = new Float64Array([1, 0, 0, 0]);
   const uniforms = {
     uTime: { value: 0 }, uWeights: { value: weights },
     uPointer: { value: new THREE.Vector2() },
     uPointScale: { value: mobile ? 15 : 18 },
+    uFold: { value: .18 }, uFoldPulse: { value: 0 },
   };
   const vertexShader = `
     attribute vec3 aKnot, aHelix;
     attribute vec3 aSphereColor, aKnotColor, aHelixColor;
+    attribute vec4 aTesseract;
+    attribute vec3 aTesseractColor;
     attribute float aSeed;
-    uniform vec3 uWeights;
+    uniform vec4 uWeights;
     uniform vec2 uPointer;
     uniform float uTime, uPointScale;
-    varying float vSeed, vPulse;
+    uniform float uFold, uFoldPulse;
+    varying float vSeed, vPulse, vHyperPulse;
     varying vec3 vFieldColor;
+    ${TESSERACT_GLSL}
     void main() {
       vec3 p = position * uWeights.x + aKnot * uWeights.y + aHelix * uWeights.z;
+      p += projectTesseract4(aTesseract, uTime, uFold, uFoldPulse) * uWeights.w;
       float transition = 1. - dot(uWeights, uWeights);
       float wave = sin(p.y * 2.4 + p.x * .7 + uTime * .55);
       p += p / max(length(p), .001) * wave * (.014 + transition * .065);
@@ -151,9 +159,11 @@ export function createWorldFieldLab(THREE, scene, { mobile = false } = EMPTY) {
       vec4 view = modelViewMatrix * vec4(p, 1.);
       gl_Position = projectionMatrix * view;
       gl_PointSize = clamp((.95 + aSeed * .7) * uPointScale / max(4., -view.z), .85, 3.2);
+      gl_PointSize *= 1. + uWeights.w * .24;
       vSeed = aSeed;
       vPulse = pow(max(0., sin(aSeed * 39. + uTime * .47)), 18.);
-      vFieldColor = aSphereColor * uWeights.x + aKnotColor * uWeights.y + aHelixColor * uWeights.z;
+      vHyperPulse = pow(max(0., sin(aTesseract.y * 1.8 + aTesseract.w * 2.2 - uTime * 1.4)), 12.) * uWeights.w;
+      vFieldColor = aSphereColor * uWeights.x + aKnotColor * uWeights.y + aHelixColor * uWeights.z + aTesseractColor * uWeights.w;
     }
   `;
   const output = `
@@ -161,10 +171,10 @@ export function createWorldFieldLab(THREE, scene, { mobile = false } = EMPTY) {
     #include <colorspace_fragment>
   `;
   const material = fragmentShader => keep(new THREE.ShaderMaterial({
-    uniforms, vertexShader, fragmentShader: `varying vec3 vFieldColor;\n${fragmentShader}`, transparent: true,
+    uniforms, vertexShader, fragmentShader: `varying vec3 vFieldColor; varying float vHyperPulse; uniform vec4 uWeights; uniform float uFoldPulse;\n${fragmentShader}`, transparent: true,
     depthTest: true, depthWrite: false, blending: THREE.AdditiveBlending,
   }));
-  function geometryFor(data) {
+  function geometryFor(data, tesseract = createTesseractCoordinates(data.sphere.length / 3)) {
     const geometry = keep(new THREE.BufferGeometry());
     geometry.setAttribute('position', new THREE.BufferAttribute(data.sphere, 3));
     geometry.setAttribute('aKnot', new THREE.BufferAttribute(data.knot, 3));
@@ -173,6 +183,8 @@ export function createWorldFieldLab(THREE, scene, { mobile = false } = EMPTY) {
     geometry.setAttribute('aSphereColor', new THREE.BufferAttribute(colors.sphere, 3));
     geometry.setAttribute('aKnotColor', new THREE.BufferAttribute(colors.knot, 3));
     geometry.setAttribute('aHelixColor', new THREE.BufferAttribute(colors.helix, 3));
+    geometry.setAttribute('aTesseract', new THREE.BufferAttribute(tesseract, 4));
+    geometry.setAttribute('aTesseractColor', new THREE.BufferAttribute(createTesseractColors(tesseract), 3));
     const seeds = new Float32Array(data.sphere.length / 3);
     for (let index = 0; index < seeds.length; index++) seeds[index] = (Math.imul(index + 1, 1597334677) >>> 0) / 4294967296;
     geometry.setAttribute('aSeed', new THREE.BufferAttribute(seeds, 1));
@@ -190,7 +202,7 @@ export function createWorldFieldLab(THREE, scene, { mobile = false } = EMPTY) {
       float radius = dot(gl_PointCoord - .5, gl_PointCoord - .5) * 4.;
       if (radius > 1.) discard;
       float alpha = (1. - smoothstep(.05, 1., radius)) * (.6 + vSeed * .34);
-      gl_FragColor = vec4(vFieldColor * (.82 + vPulse * .5), alpha);
+      gl_FragColor = vec4(vFieldColor * (.82 + vPulse * .5 + vHyperPulse * .8 + abs(uFoldPulse) * uWeights.w * .35), alpha);
       ${output}
     }
   `)), 1);
@@ -209,19 +221,19 @@ export function createWorldFieldLab(THREE, scene, { mobile = false } = EMPTY) {
       }
     }
   }
-  const traceGeometry = geometryFor(traceCoordinates);
+  const traceGeometry = geometryFor(traceCoordinates, createTesseractTraces(segments));
   traceGeometry.setIndex(new THREE.BufferAttribute(indices, 1));
   add(new THREE.LineSegments(traceGeometry, material(`
     varying float vSeed, vPulse;
     void main() {
-      gl_FragColor = vec4(vFieldColor * .86, .075 + vPulse * .07);
+      gl_FragColor = vec4(vFieldColor * (.86 + vHyperPulse * .7), .075 + vPulse * .07 + uWeights.w * (.22 + abs(uFoldPulse) * .12));
       ${output}
     }
   `)), 0);
 
   // Sparse diffraction glints sit on real particles, with no texture or sprites.
   const glintGeometry = keep(new THREE.BufferGeometry());
-  for (const key of ['position', 'aKnot', 'aHelix', 'aSeed', 'aSphereColor', 'aKnotColor', 'aHelixColor']) glintGeometry.setAttribute(key, pointGeometry.getAttribute(key));
+  for (const key of ['position', 'aKnot', 'aHelix', 'aSeed', 'aSphereColor', 'aKnotColor', 'aHelixColor', 'aTesseract', 'aTesseractColor']) glintGeometry.setAttribute(key, pointGeometry.getAttribute(key));
   const glintIndices = new Uint16Array(Math.ceil(count / 31));
   for (let index = 0; index < glintIndices.length; index++) glintIndices[index] = index * 31;
   glintGeometry.setIndex(new THREE.BufferAttribute(glintIndices, 1));
@@ -241,6 +253,54 @@ export function createWorldFieldLab(THREE, scene, { mobile = false } = EMPTY) {
   glintMaterial.vertexShader = vertexShader.replace('vSeed = aSeed;', 'gl_PointSize = min(gl_PointSize * 3.2, 9.); vSeed = aSeed;');
   add(new THREE.Points(glintGeometry, glintMaterial), 2);
 
+  // The 24 actual square faces reveal which rails share a four-dimensional cell.
+  const faces = createTesseractFaces();
+  const faceGeometry = keep(new THREE.BufferGeometry());
+  const facePositions = new Float32Array(faces.coordinates.length / 4 * 3);
+  projectTesseract(faces.coordinates, facePositions);
+  faceGeometry.setAttribute('position', new THREE.BufferAttribute(facePositions, 3));
+  faceGeometry.setAttribute('aTesseract', new THREE.BufferAttribute(faces.coordinates, 4));
+  faceGeometry.setAttribute('aTesseractColor', new THREE.BufferAttribute(createTesseractColors(faces.coordinates), 3));
+  faceGeometry.setAttribute('uv', new THREE.BufferAttribute(faces.uv, 2));
+  const faceMaterial = keep(new THREE.ShaderMaterial({
+    uniforms, transparent: true, depthWrite: false, side: THREE.DoubleSide,
+    blending: THREE.AdditiveBlending,
+    vertexShader: `
+      attribute vec4 aTesseract;
+      attribute vec3 aTesseractColor;
+      uniform float uTime, uFold, uFoldPulse;
+      varying vec2 vUv;
+      varying vec3 vColor;
+      ${TESSERACT_GLSL}
+      void main() {
+        vUv = uv;
+        vColor = aTesseractColor;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(projectTesseract4(aTesseract, uTime, uFold, uFoldPulse), 1.);
+      }
+    `,
+    fragmentShader: `
+      uniform float uTime, uFoldPulse;
+      uniform vec4 uWeights;
+      varying vec2 vUv;
+      varying vec3 vColor;
+      void main() {
+        // Multisampled, nearly edge-on faces can extrapolate UVs beyond an edge.
+        // Keep their falloff bounded before it enters the HDR bloom pyramid.
+        vec2 edgeDistance = max(vec2(0.), min(vUv, 1. - vUv));
+        float boundary = exp(-min(edgeDistance.x, edgeDistance.y) * 130.);
+        float weave = pow(max(0., sin(vUv.x * 44. + vUv.y * 31. - uTime * .65)), 24.);
+        float scan = pow(max(0., sin(vUv.x * 4. - vUv.y * 3. + uTime * .7)), 12.);
+        float alpha = (.009 + weave * .013 + boundary * .038 + scan * .014);
+        alpha *= uWeights.w * uWeights.w * (1. + abs(uFoldPulse) * 2.4);
+        gl_FragColor = vec4(vColor * (.5 + scan * .28), clamp(alpha, 0., .24));
+        ${output}
+      }
+    `,
+  }));
+  const membranes = new THREE.Mesh(faceGeometry, faceMaterial);
+  add(membranes, -1);
+  membranes.visible = false;
+
   let disposed = false, target = 0, morphStart = 0, lastTime = 0, morphing = false;
   function sampleWeights(time) {
     if (!morphing) return;
@@ -250,6 +310,7 @@ export function createWorldFieldLab(THREE, scene, { mobile = false } = EMPTY) {
       fromWeights[0] + ((target === 0 ? 1 : 0) - fromWeights[0]) * eased,
       fromWeights[1] + ((target === 1 ? 1 : 0) - fromWeights[1]) * eased,
       fromWeights[2] + ((target === 2 ? 1 : 0) - fromWeights[2]) * eased,
+      fromWeights[3] + ((target === 3 ? 1 : 0) - fromWeights[3]) * eased,
     );
     if (progress === 1) morphing = false;
   }
@@ -261,17 +322,21 @@ export function createWorldFieldLab(THREE, scene, { mobile = false } = EMPTY) {
       lastTime = time;
       sampleWeights(time);
       const next = Object.hasOwn(FORMS, state.form) ? FORMS[state.form] : 0;
-      const pausedEntry = state.paused && state.active === true && !group.visible;
+      const pausedEntry = state.paused && state.active === true && (!group.visible || state.settle === true);
       if (next !== target || pausedEntry) {
         fromWeights[0] = weights.x; fromWeights[1] = weights.y; fromWeights[2] = weights.z;
+        fromWeights[3] = weights.w;
         target = next;
         morphStart = time;
         morphing = !state.paused;
-        if (state.paused) weights.set(next === 0 ? 1 : 0, next === 1 ? 1 : 0, next === 2 ? 1 : 0);
+        if (state.paused) weights.set(next === 0 ? 1 : 0, next === 1 ? 1 : 0, next === 2 ? 1 : 0, next === 3 ? 1 : 0);
       }
       uniforms.uTime.value = time;
+      uniforms.uFold.value = clamp(Number.isFinite(state.fold) ? state.fold : .18, 0, 1);
+      uniforms.uFoldPulse.value = clamp(finite(state.foldPulse), -1, 1);
       uniforms.uPointer.value.set(clamp(finite(state.pointer?.x), -1, 1), clamp(finite(state.pointer?.y), -1, 1));
       group.rotation.set(-.13 + Math.sin(time * .11) * .07, time * .085, .1);
+      membranes.visible = weights.w > .001;
       group.visible = state.active === true;
     },
     dispose() {

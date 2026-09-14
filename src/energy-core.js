@@ -4,6 +4,7 @@ import { createWorldEnvironment } from './world-environment.js';
 import { createWorldCinematic } from './world-cinematic.js';
 import { createWorldSingularity } from './world-singularity.js';
 import { createWorldFieldLab } from './world-field-lab.js';
+import { sampleFoldPulse } from './dimension-math.js';
 import { sampleSpacetime } from './world-spacetime.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import './energy-core.css';
@@ -400,6 +401,9 @@ function initializeArmillary(host, canvas) {
   let immersive = host.dataset.world === 'true';
   let fieldActive = host.dataset.lab === 'true';
   let fieldForm = host.dataset.labForm || 'sphere';
+  let fieldFold = THREE.MathUtils.clamp(Number(host.dataset.labFold ?? .18) || 0, 0, 1);
+  let fieldPulseStarted = -Infinity;
+  let fieldSettle = false;
   let realm = host.dataset.realm || 'overview';
   const activity = { kind: null, strength: 0, progress: 0 };
   let activityTarget = 0;
@@ -549,7 +553,8 @@ function initializeArmillary(host, canvas) {
     activity.progress = Math.min(1, (elapsed - activityStarted) / 7);
     world.update({ time: elapsed, scatter, charge, realm, immersive, activity, warp, collapse: spacetime.collapse, bloom: spacetime.bloom, visible: !fieldActive });
     instrument.visible = !fieldActive;
-    fieldLab.update({ time: elapsed, active: immersive && fieldActive, form: fieldForm, pointer: { x: easedX, y: easedY }, paused: isPaused });
+    fieldLab.update({ time: elapsed, active: immersive && fieldActive, form: fieldForm, pointer: { x: easedX, y: easedY }, paused: isPaused, settle: fieldSettle, fold: fieldFold, foldPulse: sampleFoldPulse(elapsed - fieldPulseStarted) });
+    fieldSettle = false;
     instrument.scale.setScalar(1 - spacetime.collapse * .92 + spacetime.bloom * .08);
     singularity.update({ time: elapsed, scatter, charge, realm, immersive, singularity: spacetime, pointer: { x: easedX, y: easedY }, visible: !fieldActive });
     nucleus.rotation.y = elapsed * .15;
@@ -707,7 +712,7 @@ function initializeArmillary(host, canvas) {
     realm = Object.hasOwn(views, event.detail?.realm) ? event.detail.realm : 'overview';
     orbit.x = orbit.y = orbit.zoom = 0;
     pointerX = pointerY = 0;
-    if (!immersive) { flightStarted = -100; fieldActive = false; }
+    if (!immersive) { flightStarted = -100; fieldActive = false; fieldPulseStarted = -Infinity; }
     resize();
     syncAnimation();
   }
@@ -720,11 +725,27 @@ function initializeArmillary(host, canvas) {
     if (immersive && isPaused && !disposed && !contextLost) render();
   }
   function onWorldLab(event) {
+    if (event.detail?.active !== true || event.detail?.form !== fieldForm) fieldPulseStarted = -Infinity;
     fieldActive = immersive && event.detail?.active === true;
-    if (['sphere', 'knot', 'helix'].includes(event.detail?.form)) fieldForm = event.detail.form;
+    if (['sphere', 'knot', 'helix', 'tesseract'].includes(event.detail?.form)) fieldForm = event.detail.form;
     cancelSceneTap();
     hoverLandmark(null);
     if (!disposed && !contextLost) render();
+  }
+  function onWorldLabFold(event) {
+    if (disposed || !Number.isFinite(event.detail?.value)) return;
+    fieldFold = THREE.MathUtils.clamp(event.detail.value, 0, 1);
+    fieldPulseStarted = -Infinity;
+    fieldSettle = isPaused;
+    if (immersive && fieldActive && !contextLost) render();
+  }
+  function onWorldLabPulse(event) {
+    if (disposed || contextLost) return;
+    if (event.detail?.active === true) {
+      if (!immersive || !fieldActive || fieldForm !== 'tesseract' || isPaused) return;
+      fieldPulseStarted = elapsed;
+    } else fieldPulseStarted = -Infinity;
+    if (immersive && fieldActive) render();
   }
   function onActivity(event) {
     if (!['resonance', 'signal', 'forge'].includes(event.detail?.kind)) return;
@@ -781,6 +802,8 @@ function initializeArmillary(host, canvas) {
   document.addEventListener('world-view', onWorldView);
   document.addEventListener('world-orbit', onWorldOrbit);
   document.addEventListener('world-lab', onWorldLab);
+  document.addEventListener('world-lab-fold', onWorldLabFold);
+  document.addEventListener('world-lab-pulse', onWorldLabPulse);
   document.addEventListener('world-activity', onActivity);
   document.addEventListener('world-flight', onFlight);
   document.addEventListener('world-capture', onCapture);
@@ -811,6 +834,8 @@ function initializeArmillary(host, canvas) {
     document.removeEventListener('world-view', onWorldView);
     document.removeEventListener('world-orbit', onWorldOrbit);
     document.removeEventListener('world-lab', onWorldLab);
+    document.removeEventListener('world-lab-fold', onWorldLabFold);
+    document.removeEventListener('world-lab-pulse', onWorldLabPulse);
     document.removeEventListener('world-activity', onActivity);
     document.removeEventListener('world-flight', onFlight);
     document.removeEventListener('world-capture', onCapture);

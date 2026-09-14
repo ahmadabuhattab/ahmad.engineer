@@ -32,12 +32,18 @@ if (dialog && stage && visual && host && canvas && typeof dialog.showModal === '
   let clockFrame = 0, lastTick = 0;
   let spacetimeTime = 0, spacetimeActive = false, spacetimePhase = '';
   let labActive = false, labForm = 'sphere';
+  let foldRemaining = 0;
   const labDescriptions = {
     sphere: 'Symmetry in every direction. Drag to turn the field; pinch or use the camera controls to get closer.',
     knot: 'A continuous path woven through space. Change the form and watch every point find a new place.',
     helix: 'Two paths around one axis. A simple rule becomes a complex, living structure.',
+    tesseract: 'A four-dimensional cube, projected into three dimensions. Its 16 vertices and 32 edges stay connected as you turn the fourth axis. Drag the scene to change your viewpoint, or fold space to see the structure turn inside out.',
   };
   const labControls = document.getElementById('worldFormControls');
+  const foldControls = document.getElementById('worldFoldControls');
+  const foldInput = document.getElementById('worldFold');
+  const foldButton = document.getElementById('worldFoldPulse');
+  host.dataset.labFold = String(Number(foldInput.value) / 100);
   const visited = new Set();
   const audio = createWorldAudio();
   const disposePointer = initializeWorldPointer(dialog, canvas);
@@ -53,14 +59,14 @@ if (dialog && stage && visual && host && canvas && typeof dialog.showModal === '
   const isPaused = () => document.body.classList.contains('motion-paused');
   const rendererReady = () => ['canvas', 'webgl'].includes(host.dataset.render);
   const dispatch = (name, detail) => document.dispatchEvent(new CustomEvent(name, { detail }));
-  const updateAudio = () => audio.update({ realm, activity: activityRemaining > 0 ? strength : 0, paused: isPaused(), active });
+  const updateAudio = () => audio.update({ realm: labActive && labForm === 'tesseract' ? 'dimension' : realm, activity: foldRemaining > 0 ? .8 : activityRemaining > 0 ? strength : 0, paused: isPaused(), active });
   function fitLayout() {
     if (!active) return;
     syncDetailsLabel();
     const titleSize = parseFloat(getComputedStyle(document.getElementById('worldTitle')).fontSize);
     const shortViewport = innerWidth <= 600 ? innerHeight < 540 : innerHeight < 360;
     const shortLab = labActive && (innerWidth <= 600 ? innerHeight < 700 : innerHeight < 460);
-    dialog.classList.toggle('world-compact', titleSize > 44 || shortViewport || shortLab);
+    dialog.classList.toggle('world-compact', titleSize >= 44 || shortViewport || shortLab);
   }
   const layoutObserver = new ResizeObserver(fitLayout);
   layoutObserver.observe(document.getElementById('worldTitle'));
@@ -112,7 +118,14 @@ if (dialog && stage && visual && host && canvas && typeof dialog.showModal === '
     fitLayout();
     dialog.scrollTop = 0;
     if (!isPaused()) startFlight();
-    if (opener.dataset.labForm) startFieldLab(opener.dataset.labForm);
+    if (opener.dataset.labForm) {
+      const previewFold = Number(opener.dataset.labFold);
+      if (Number.isFinite(previewFold) && opener.hasAttribute('data-lab-fold')) {
+        foldInput.value = String(Math.round(clamp(previewFold, 0, 1) * 100));
+        setFoldValue();
+      }
+      startFieldLab(opener.dataset.labForm);
+    }
     else if (realm === 'overview' && !isPaused() && visited.size === 0) startTour();
     updateAudio();
     close.focus({ preventScroll: true });
@@ -177,6 +190,8 @@ if (dialog && stage && visual && host && canvas && typeof dialog.showModal === '
     experiment.disabled = !ready;
     tourButton.disabled = !ready;
     gravityButton.disabled = !ready;
+    foldInput.disabled = !ready;
+    foldButton.disabled = !ready;
     labControls.querySelectorAll('button').forEach(button => { button.disabled = !ready; });
     hint.textContent = ready ? labActive ? 'Drag to turn / Choose a form / Make it your own' : 'Drag to explore / Touch a landmark / 1 · 2 · 3 to travel' : failed ? 'Static view / Discover the work through the chapter links' : 'Preparing the observatory…';
     if (ready) runClock();
@@ -304,20 +319,62 @@ if (dialog && stage && visual && host && canvas && typeof dialog.showModal === '
   }
   function stopFieldLab() {
     if (!labActive) return;
+    stopFold();
     labActive = false;
     host.dataset.lab = 'false';
     dialog.classList.remove('world-lab-active');
     labControls.hidden = true;
+    foldControls.hidden = true;
+    dialog.classList.remove('world-dimension-active');
     dispatch('world-lab', { active: false, form: labForm });
   }
   function chooseLabForm(form) {
+    stopFold();
     labForm = Object.hasOwn(labDescriptions, form) ? form : 'sphere';
+    const fourth = labForm === 'tesseract';
+    foldControls.hidden = !fourth;
+    dialog.classList.toggle('world-dimension-active', fourth);
+    document.getElementById('worldIndex').textContent = fourth ? 'DIMENSION IV / A NEW PERSPECTIVE' : 'THE FIELD LAB / MATHEMATICS IN MOTION';
+    document.getElementById('worldTitle').textContent = fourth ? 'Beyond three dimensions.' : 'An idea. Infinite forms.';
     host.dataset.labForm = labForm;
     labControls.querySelectorAll('button').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.labShape === labForm)));
     document.getElementById('worldDescription').textContent = labDescriptions[labForm];
-    experimentStatus.textContent = `${labForm === 'knot' ? 'Torus knot' : labForm === 'helix' ? 'Double helix' : 'Sphere'} selected. Choose a form to reshape the field.`;
+    experimentStatus.textContent = fourth ? 'Turn the fourth axis, or fold space to see the geometry unfold.' : `${labForm === 'knot' ? 'Torus knot' : labForm === 'helix' ? 'Double helix' : 'Sphere'} selected. Choose a form to reshape the field.`;
     dispatch('world-lab', { active: true, form: labForm });
+    updateAudio();
+    fitLayout();
   }
+  function stopFold() {
+    foldRemaining = 0;
+    foldButton.textContent = 'Fold space';
+    foldButton.setAttribute('aria-pressed', 'false');
+    dialog.classList.remove('world-folding');
+    dispatch('world-lab-pulse', { active: false });
+    updateAudio();
+  }
+  function setFoldValue() {
+    stopFold();
+    const value = clamp(Number(foldInput.value) / 100, 0, 1);
+    host.dataset.labFold = String(value);
+    document.getElementById('worldFoldValue').textContent = `${Math.round(value * 360)}°`;
+    foldInput.setAttribute('aria-valuetext', `${Math.round(value * 360)} degrees`);
+    dispatch('world-lab-fold', { value });
+  }
+  foldInput.addEventListener('input', setFoldValue);
+  foldButton.addEventListener('click', () => {
+    if (!active || !labActive || labForm !== 'tesseract' || foldButton.disabled) return;
+    if (foldRemaining > 0) { stopFold(); return; }
+    // The explicit experiment gesture may start motion; passive entry never does.
+    if (isPaused()) motion.click();
+    foldRemaining = 3.2;
+    foldButton.textContent = 'Restore space';
+    foldButton.setAttribute('aria-pressed', 'true');
+    dialog.classList.add('world-folding');
+    experimentStatus.textContent = 'A fourth-axis rotation. Space turns inside out.';
+    dispatch('world-lab-pulse', { active: true });
+    updateAudio();
+    runClock();
+  });
   function startFieldLab(form = 'sphere') {
     if (!active) return;
     stopTour();
@@ -374,7 +431,7 @@ if (dialog && stage && visual && host && canvas && typeof dialog.showModal === '
     runClock();
   }
   function runClock() {
-    if (!active || isPaused() || document.hidden || clockFrame || !rendererReady() || !(tour || spacetimeActive || flightRemaining > 0 || activityRemaining > 0)) return;
+    if (!active || isPaused() || document.hidden || clockFrame || !rendererReady() || !(tour || spacetimeActive || foldRemaining > 0 || flightRemaining > 0 || activityRemaining > 0)) return;
     lastTick = performance.now(); clockFrame = requestAnimationFrame(tick);
   }
   function stopClock() {
@@ -386,6 +443,10 @@ if (dialog && stage && visual && host && canvas && typeof dialog.showModal === '
     clockFrame = 0;
     if (!active || isPaused() || document.hidden || !rendererReady()) return;
     const delta = Math.min(.1, (now - lastTick) / 1000); lastTick = now;
+    if (foldRemaining > 0) {
+      foldRemaining = Math.max(0, foldRemaining - delta);
+      if (!foldRemaining) { stopFold(); experimentStatus.textContent = 'A different perspective. The same connected structure.'; }
+    }
     if (spacetimeActive) {
       spacetimeTime = Math.min(SPACETIME_DURATION, spacetimeTime + delta);
       const progress = spacetimeTime / SPACETIME_DURATION;
@@ -418,7 +479,7 @@ if (dialog && stage && visual && host && canvas && typeof dialog.showModal === '
       activityRemaining = Math.max(0, activityRemaining - delta);
       if (!activityRemaining) { stopActivity(); experimentStatus.textContent = 'The system settles. Try it again, or explore further.'; }
     }
-    if (tour || spacetimeActive || flightRemaining > 0 || activityRemaining > 0) clockFrame = requestAnimationFrame(tick);
+    if (tour || spacetimeActive || foldRemaining > 0 || flightRemaining > 0 || activityRemaining > 0) clockFrame = requestAnimationFrame(tick);
   }
   gravityButton.addEventListener('click', startSpacetime);
   tourButton.addEventListener('click', startTour);
