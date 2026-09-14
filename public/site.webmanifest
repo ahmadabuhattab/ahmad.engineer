@@ -4,8 +4,8 @@
     "description": "Engineering Physics student at McMaster University. Founder of City Centre Firm. Currently at STELCO.",
     "start_url": "/",
     "display": "standalone",
-    "background_color": "#fafafa",
-    "theme_color": "#fafafa",
+    "background_color": "#0b0b0b",
+    "theme_color": "#0b0b0b",
     "icons": [
         {
             "src": "/android-chrome-192x192.png",
