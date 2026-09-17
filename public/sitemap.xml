@@ -3,11 +3,17 @@
         xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
     <url>
         <loc>https://ahmad.engineer/</loc>
-        <lastmod>2026-09-14</lastmod>
+        <lastmod>2026-09-17</lastmod>
+        <image:image>
+            <image:loc>https://ahmad.engineer/images/ahmad-abuhattab-suit-600w.jpg</image:loc>
+        </image:image>
+        <image:image>
+            <image:loc>https://ahmad.engineer/images/ahmad-abuhattab-suit-600w.webp</image:loc>
+        </image:image>
     </url>
     <url>
         <loc>https://ahmad.engineer/photos</loc>
-        <lastmod>2026-09-14</lastmod>
+        <lastmod>2026-09-17</lastmod>
         <image:image>
             <image:loc>https://ahmad.engineer/images/ahmad-abuhattab-suit.jpg</image:loc>
         </image:image>
