@@ -79,3 +79,5 @@ h1 span{display:block}
 }
 @media(max-width:359px){.shell{width:calc(100% - 32px)}.intro{gap:16px}.intro picture{flex-basis:86px}.portrait{width:86px}.intro h1{font-size:35px}.email{font-size:20px}.role-heading{flex-wrap:wrap;gap:3px 12px}}
 @media print{:root{color-scheme:light;--paper:#fff;--ink:#111;--muted:#606060;--line:#dedede}.shell{width:100%;max-width:none}.site-header nav,.skip-link,.footer-links{display:none}body{font-size:12px}.intro{padding-block:24px}.section{padding-block:18px;break-inside:avoid}a{text-decoration:none}.portrait{width:140px}.intro{grid-template-columns:1fr 140px}}
+
+.contact-links a svg{width:16px;height:16px;margin-right:7px;flex:none}
